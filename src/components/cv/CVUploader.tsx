@@ -180,7 +180,7 @@ export function CVUploader({
                             {t('ai_provider')}
                         </Label>
                         <Select
-                            value={selectedProvider || undefined}
+                            value={selectedProvider || ""}
                             onValueChange={(val) => handleProviderChange(val as AIProviderName)}
                             disabled={isExtracting || disabled || validProviders.length === 0}
                         >
@@ -204,7 +204,7 @@ export function CVUploader({
                             {t('ai_model')}
                         </Label>
                         <Select
-                            value={selectedModel}
+                            value={selectedModel || ""}
                             onValueChange={setSelectedModel}
                             disabled={isExtracting || disabled || !selectedProvider}
                         >
@@ -336,15 +336,15 @@ export function CVUploader({
                     }
                 >
                     {isExtracting ? (
-                        <>
+                        <span className="flex items-center justify-center pointer-events-none" key="extracting">
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             {t('extracting_info')}
-                        </>
+                        </span>
                     ) : (
-                        <>
+                        <span className="flex items-center justify-center pointer-events-none" key="idle">
                             <Brain className="h-4 w-4 mr-2" />
                             {t('extract_data')}
-                        </>
+                        </span>
                     )}
                 </Button>
 
