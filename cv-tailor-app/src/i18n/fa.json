@@ -338,7 +338,9 @@
         "copy_to_clipboard": "کپی در کلیپ‌بورد",
         "view_application": "مشاهده درخواست",
         "application_saved": "درخواست ذخیره شد",
-        "continue_editing": "ادامه ویرایش"
+        "continue_editing": "ادامه ویرایش",
+        "download_ready": "فایل‌ها آماده هستند!",
+        "download_description": "مستندات اختصاصی خود را با فرمت دلخواه صادر کنید."
     },
     "applications": {
         "title": "درخواست‌های من",

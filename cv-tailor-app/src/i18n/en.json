@@ -338,7 +338,9 @@
         "copy_to_clipboard": "Copy to Clipboard",
         "view_application": "View Application",
         "application_saved": "Application saved",
-        "continue_editing": "Continue Editing"
+        "continue_editing": "Continue Editing",
+        "download_ready": "Files are ready!",
+        "download_description": "Export your tailored documents in your preferred format."
     },
     "applications": {
         "title": "My Applications",
