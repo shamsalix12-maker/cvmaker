@@ -132,6 +132,8 @@
         "upload_description": "Upload your comprehensive CV in Word or Markdown format",
         "upload_drag_drop": "Drag and drop your file here, or click to browse",
         "supported_formats": "Supported formats: .docx, .md",
+        "ai_provider": "AI Provider",
+        "ai_model": "AI Model",
         "or_enter_manually": "Or enter manually",
         "enter_manually": "Enter Manually",
         "personal_info": "Personal Information",
@@ -197,7 +199,27 @@
         "parsing_file": "Parsing file...",
         "parse_error": "Failed to parse file",
         "preview": "Preview",
-        "raw_text": "Raw Text"
+        "raw_text": "Raw Text",
+        "select_provider": "Select Provider",
+        "select_model": "Select Model",
+        "no_providers": "No providers configured",
+        "file_upload": "File Upload",
+        "paste_text": "Paste Text",
+        "paste_placeholder": "Paste your CV content here...",
+        "extracting_info": "Extracting Information...",
+        "extract_data": "Analyze & Extract Data",
+        "replace_confirm": "Uploading a new CV will replace your existing one.",
+        "errors": {
+            "validation": {
+                "invalid_file_type": "Invalid file type. Supported formats: {formats}",
+                "file_too_large": "File is too large. Maximum size is {size}MB"
+            }
+        },
+        "remove": "Remove",
+        "max_size": "(Max {size}MB)",
+        "select_ai_first": "Please select an AI provider and model",
+        "provide_content": "Please provide a file or text content",
+        "extraction_failed": "Extraction failed"
     },
     "prompts": {
         "title": "Prompt Management",

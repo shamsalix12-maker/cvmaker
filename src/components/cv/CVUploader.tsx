@@ -125,7 +125,7 @@ export function CVUploader({
 
     const handleExtract = async () => {
         if (!selectedProvider || !selectedModel) {
-            toast.error('Please select an AI provider and model');
+            toast.error(t('select_ai_first'));
             return;
         }
 
@@ -139,7 +139,7 @@ export function CVUploader({
             } else if (activeTab === 'text' && text.trim()) {
                 result = await extractFromText(text, selectedProvider, selectedModel);
             } else {
-                toast.error('Please provide a file or text content');
+                toast.error(t('provide_content'));
                 setIsExtracting(false);
                 return;
             }
@@ -147,7 +147,7 @@ export function CVUploader({
             onExtractionComplete(result);
 
         } catch (err: any) {
-            toast.error(err.message || 'Extraction failed');
+            toast.error(err.message || t('extraction_failed'));
         } finally {
             setIsExtracting(false);
         }
@@ -183,14 +183,14 @@ export function CVUploader({
                             disabled={isExtracting || disabled || validProviders.length === 0}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Select Provider" />
+                                <SelectValue placeholder={t('select_provider')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {validProviders.map(p => (
                                     <SelectItem key={p} value={p}>{p}</SelectItem>
                                 ))}
                                 {validProviders.length === 0 && (
-                                    <SelectItem value="" disabled>No providers configured</SelectItem>
+                                    <SelectItem value="none" disabled>{t('no_providers')}</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -207,7 +207,7 @@ export function CVUploader({
                             disabled={isExtracting || disabled || !selectedProvider}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Select Model" />
+                                <SelectValue placeholder={t('select_model')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableModels.map(m => (
@@ -222,11 +222,11 @@ export function CVUploader({
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="file" disabled={isExtracting || disabled}>
                             <Upload className="h-4 w-4 mr-2" />
-                            File Upload
+                            {t('file_upload')}
                         </TabsTrigger>
                         <TabsTrigger value="text" disabled={isExtracting || disabled}>
                             <Clipboard className="h-4 w-4 mr-2" />
-                            Paste Text
+                            {t('paste_text')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -272,7 +272,7 @@ export function CVUploader({
                                             }}
                                             disabled={isExtracting}
                                         >
-                                            Remove
+                                            {t('remove')}
                                         </Button>
                                     </>
                                 ) : (
@@ -282,7 +282,7 @@ export function CVUploader({
                                             {t('upload_drag_drop')}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('supported_formats')} (Max 5MB)
+                                            {t('supported_formats')} {t('max_size', { size: 5 })}
                                         </p>
                                     </>
                                 )}
@@ -292,7 +292,7 @@ export function CVUploader({
 
                     <TabsContent value="text" className="mt-4">
                         <Textarea
-                            placeholder="Paste your CV content here..."
+                            placeholder={t('paste_placeholder')}
                             className="min-h-[200px] font-mono text-sm"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
@@ -316,12 +316,12 @@ export function CVUploader({
                     {isExtracting ? (
                         <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting Information...
+                            {t('extracting_info')}
                         </>
                     ) : (
                         <>
                             <Brain className="h-4 w-4 mr-2" />
-                            Analyze & Extract Data
+                            {t('extract_data')}
                         </>
                     )}
                 </Button>
@@ -329,7 +329,7 @@ export function CVUploader({
                 {existingCV && (
                     <div className="flex items-center justify-center gap-2 text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
                         <AlertCircle className="h-4 w-4" />
-                        Uploading a new CV will replace your existing one.
+                        {t('replace_confirm')}
                     </div>
                 )}
             </CardContent>

@@ -132,6 +132,8 @@
         "upload_description": "سی‌وی جامع خود را به فرمت Word یا Markdown آپلود کنید",
         "upload_drag_drop": "فایل را اینجا بکشید و رها کنید، یا کلیک کنید",
         "supported_formats": "فرمت‌های پشتیبانی شده: .docx, .md",
+        "ai_provider": "سرویس‌دهنده هوش مصنوعی",
+        "ai_model": "مدل هوش مصنوعی",
         "or_enter_manually": "یا به صورت دستی وارد کنید",
         "enter_manually": "ورود دستی",
         "personal_info": "اطلاعات شخصی",
@@ -197,7 +199,27 @@
         "parsing_file": "در حال پردازش فایل...",
         "parse_error": "خطا در پردازش فایل",
         "preview": "پیش‌نمایش",
-        "raw_text": "متن خام"
+        "raw_text": "متن خام",
+        "select_provider": "انتخاب سرویس‌دهنده",
+        "select_model": "انتخاب مدل",
+        "no_providers": "سرویس‌دهنده‌ای تنظیم نشده است",
+        "file_upload": "آپلود فایل",
+        "paste_text": "جای‌گذاری متن",
+        "paste_placeholder": "محتوای سی‌وی خود را اینجا بچسبانید...",
+        "extracting_info": "در حال استخراج اطلاعات...",
+        "extract_data": "تحلیل و استخراج داده‌ها",
+        "replace_confirm": "آپلود سی‌وی جدید جایگزین سی‌وی قبلی شما خواهد شد.",
+        "errors": {
+            "validation": {
+                "invalid_file_type": "فرمت فایل نامعتبر است. فرمت‌های پشتیبانی شده: {formats}",
+                "file_too_large": "حجم فایل خیلی زیاد است. حداکثر حجم مجاز {size} مگابایت است"
+            }
+        },
+        "remove": "حذف",
+        "max_size": "(حداکثر {size} مگابایت)",
+        "select_ai_first": "لطفاً ابتدا سرویس‌دهنده و مدل هوش مصنوعی را انتخاب کنید",
+        "provide_content": "لطفاً یک فایل یا محتوای متنی ارائه دهید",
+        "extraction_failed": "استخراج اطلاعات ناموفق بود"
     },
     "prompts": {
         "title": "مدیریت پرامپت‌ها",
