@@ -36,10 +36,23 @@ You can now continue pushing changes as usual, and large dependency files will b
     - Set **Site URL** to your Vercel URL.
     - Add `http://localhost:3000/auth/callback` to **Redirect URLs**.
     - Add `https://cv-tailor-app-kappa.vercel.app/auth/callback` to **Redirect URLs**.
-## ✅ OAuth & Layout Fixes
+## ✅ OAuth & Layout Fixes (Updated)
 
-1.  **Fixed Root Layout**: Added missing `<html>` and `<body>` tags to `src/app/layout.tsx`. This prevents the "Missing html and body tags" runtime error during 404s or non-localized routes.
-2.  **Fixed Auth Callback Routing**: Updated `src/middleware.ts` to exclude `/auth` routes from `next-intl` locale redirection. This ensures that the Supabase callback at `/auth/callback` is reachable directly without a locale prefix.
+1.  **Localized Auth Callback**: Moved the callback handler to `src/app/[locale]/auth/callback/route.ts`. This ensures it plays nicely with `next-intl` and doesn't get 404'd by mistake.
+2.  **Redirect Update**: Updated `GoogleLoginButton.tsx` to include the current locale in the redirect URL (e.g., `/en/auth/callback`).
+3.  **Layout Cleanup**: Removed the conflicting `src/app/layout.tsx`. All pages now use the localized `src/app/[locale]/layout.tsx` which correctly provides the `<html>` and `<body>` tags.
+
+## ⚠️ Action Required: Update Consoles
+You must add the localized URLs to your allowed lists:
+
+**Supabase Dashboard (URL Configuration):**
+- Add `http://localhost:3000/en/auth/callback`
+- Add `http://localhost:3000/fa/auth/callback`
+- Add `https://cv-tailor-app-kappa.vercel.app/en/auth/callback`
+- Add `https://cv-tailor-app-kappa.vercel.app/fa/auth/callback`
+
+**Google Cloud Console (Redirect URIs):**
+- Same as above.
 
 ## Next Steps
 - Re-test the Google Login flow.

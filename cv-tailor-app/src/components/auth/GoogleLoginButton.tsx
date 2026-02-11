@@ -2,7 +2,7 @@
 
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 export function GoogleLoginButton() {
     const t = useTranslations('auth');
+    const locale = useLocale();
     const [loading, setLoading] = useState(false);
     const supabase = createBrowserSupabaseClient();
 
@@ -19,7 +20,7 @@ export function GoogleLoginButton() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/${locale}/auth/callback`,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
