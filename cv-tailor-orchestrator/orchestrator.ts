@@ -119,10 +119,10 @@ interface BlockDefinition {
     goal: string;
     dependencies: string[];
     files_to_create: { id: string; path: string; content?: string }[];
-    files_to_modify: { id: string; path: string }[];
-    files_available: { id: string; path: string; from_block: string }[];
-    commands: string[];
-    instructions: string;
+    files_to_modify?: { id: string; path: string }[];
+    files_available?: { id: string; path: string; from_block: string }[];
+    commands?: string[];
+    instructions?: string;
     checkpoint_tests: CheckpointTest[];
     max_retries: number;
 }
@@ -177,8 +177,8 @@ function buildPrompt(block: BlockDefinition, state: ProjectState): string {
         .map(f => `[${f.id}] ${f.path}`)
         .join('\n');
 
-    const filesToModify = block.files_to_modify.length > 0
-        ? block.files_to_modify.map(f => `[${f.id}] ${f.path}`).join('\n')
+    const filesToModify = (block.files_to_modify || []).length > 0
+        ? block.files_to_modify!.map(f => `[${f.id}] ${f.path}`).join('\n')
         : 'None';
 
     const availableFiles = Object.entries(state.file_registry)
@@ -186,8 +186,8 @@ function buildPrompt(block: BlockDefinition, state: ProjectState): string {
         .map(([id, info]) => `[${id}] ${info.path} (from ${info.created_by})`)
         .join('\n') || 'None — this is the first block.';
 
-    const commands = block.commands.length > 0
-        ? block.commands.map(c => `\`\`\`\n${c}\n\`\`\``).join('\n')
+    const commands = (block.commands || []).length > 0
+        ? block.commands!.map(c => `\`\`\`\n${c}\n\`\`\``).join('\n')
         : '';
 
     const tests = block.checkpoint_tests
@@ -215,7 +215,9 @@ function buildPrompt(block: BlockDefinition, state: ProjectState): string {
         prompt += `## EXACT FILE CONTENTS\n${fileContents}\n\n`;
     }
 
-    prompt += `## INSTRUCTIONS\n${block.instructions}\n\n`;
+    if (block.instructions) {
+        prompt += `## INSTRUCTIONS\n${block.instructions}\n\n`;
+    }
     prompt += `## CHECKPOINT TESTS (verify ALL after completion)\n${tests}\n\n`;
 
     prompt += `## MANDATORY RULES\n`;
@@ -246,7 +248,7 @@ function buildFixPrompt(block: BlockDefinition, failedTests: TestResult[]): stri
     prompt += `## FILES YOU MAY MODIFY TO FIX\n`;
     const allFiles = [
         ...block.files_to_create.map(f => `[${f.id}] ${f.path}`),
-        ...block.files_to_modify.map(f => `[${f.id}] ${f.path}`)
+        ...(block.files_to_modify || []).map(f => `[${f.id}] ${f.path}`)
     ];
     prompt += allFiles.join('\n') + '\n\n';
     prompt += `## RULES\n`;

@@ -24,8 +24,10 @@ out/
 
 # Agent
 .agent/
-agent.md
+
 
 # Misc
 .DS_Store
 *.pem
+.vercel
+.env*.local

@@ -1,8 +1,8 @@
 {
   "project_name": "cv-tailor-app",
-  "current_block": "B26",
+  "current_block": "B27",
   "started_at": "2026-02-10T16:40:08.351Z",
-  "last_updated": "2026-02-10T21:17:44.489Z",
+  "last_updated": "2026-02-11T15:29:14.193Z",
   "blocks": {
     "B01": {
       "status": "passed",
@@ -1294,10 +1294,10 @@
       ]
     },
     "B27": {
-      "status": "pending",
-      "started_at": null,
+      "status": "in_progress",
+      "started_at": "2026-02-11T15:29:14.192Z",
       "completed_at": null,
-      "attempts": 0,
+      "attempts": 1,
       "test_results": [],
       "files_created": [],
       "files_modified": [],
