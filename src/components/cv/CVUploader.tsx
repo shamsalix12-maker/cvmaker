@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles, Plus
+    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles, Plus, RefreshCw
 } from 'lucide-react';
 import { useCV } from '@/hooks/useCV';
 import { useAIKeys } from '@/hooks/useAIKeys';
@@ -184,10 +184,22 @@ export function CVUploader({
                 {/* AI Selection */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
                     <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                            <Brain className="h-4 w-4" />
-                            {t('ai_provider')}
-                        </Label>
+                        <div className="flex items-center justify-between gap-1">
+                            <Label className="flex items-center gap-1">
+                                <Brain className="h-4 w-4" />
+                                {t('ai_provider')}
+                            </Label>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => fetchKeys()}
+                                disabled={keysLoading || isExtracting}
+                                title={t('refresh_keys')}
+                            >
+                                <RefreshCw className={cn("h-3 w-3", keysLoading && "animate-spin")} />
+                            </Button>
+                        </div>
                         <Select
                             value={selectedProvider || ""}
                             onValueChange={(val) => handleProviderChange(val as AIProviderName)}

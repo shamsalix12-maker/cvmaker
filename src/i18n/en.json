@@ -221,7 +221,8 @@
         "provide_content": "Please provide a file or text content",
         "extraction_failed": "Extraction failed",
         "no_keys_alert": "No AI API keys configured. Please add a key in Settings to enable automatic parsing.",
-        "configure_keys": "Configure API Keys"
+        "configure_keys": "Configure API Keys",
+        "refresh_keys": "Refresh Keys"
     },
     "prompts": {
         "title": "Prompt Management",
