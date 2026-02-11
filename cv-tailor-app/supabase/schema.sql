@@ -124,29 +124,25 @@ ALTER TABLE public.ai_api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 
--- Development policies (permissive for now - will be tightened in production)
--- Users table
-CREATE POLICY "users_select_all" ON public.users FOR SELECT USING (true);
-CREATE POLICY "users_insert_all" ON public.users FOR INSERT WITH CHECK (true);
-CREATE POLICY "users_update_all" ON public.users FOR UPDATE USING (true);
+-- USERS TABLE: Users can only see and update their own profile
+CREATE POLICY "users_self_select" ON public.users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "users_self_update" ON public.users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE POLICY "users_self_insert" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 
--- CVs table
-CREATE POLICY "cvs_all" ON public.comprehensive_cvs FOR ALL USING (true);
+-- CVs TABLE: Users can manage only their own CV
+CREATE POLICY "cvs_owner_all" ON public.comprehensive_cvs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Prompts table (readable by all, manageable by all for now)
-CREATE POLICY "prompts_select_all" ON public.prompts FOR SELECT USING (true);
-CREATE POLICY "prompts_insert_all" ON public.prompts FOR INSERT WITH CHECK (true);
-CREATE POLICY "prompts_update_all" ON public.prompts FOR UPDATE USING (true);
-CREATE POLICY "prompts_delete_all" ON public.prompts FOR DELETE USING (true);
+-- PROMPTS TABLE: Authenticated users can read all active prompts
+CREATE POLICY "prompts_auth_select" ON public.prompts FOR SELECT TO authenticated USING (is_active = true);
 
--- API Keys table
-CREATE POLICY "api_keys_all" ON public.ai_api_keys FOR ALL USING (true);
+-- API KEYS TABLE: Users can manage only their own keys
+CREATE POLICY "api_keys_owner_all" ON public.ai_api_keys FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Templates table
-CREATE POLICY "templates_all" ON public.templates FOR ALL USING (true);
+-- TEMPLATES TABLE: Users can manage only their own templates
+CREATE POLICY "templates_owner_all" ON public.templates FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Job Applications table
-CREATE POLICY "applications_all" ON public.job_applications FOR ALL USING (true);
+-- JOB APPLICATIONS TABLE: Users can manage only their own applications
+CREATE POLICY "applications_owner_all" ON public.job_applications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────
 -- UPDATED_AT TRIGGER
