@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Template, TemplateType, FileFormat } from '@/lib/types';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 export function useTemplates(type?: TemplateType) {
     const { user } = useAuth();
@@ -22,7 +23,7 @@ export function useTemplates(type?: TemplateType) {
 
         try {
             const headers: HeadersInit = {};
-            if (user.id.startsWith('dev-user-')) {
+            if (isDevUser(user.id)) {
                 headers['x-user-id'] = user.id;
             }
 
@@ -56,7 +57,7 @@ export function useTemplates(type?: TemplateType) {
         if (!user) throw new Error('Not authenticated');
 
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (user.id.startsWith('dev-user-')) {
+        if (isDevUser(user.id)) {
             headers['x-user-id'] = user.id;
         }
 
@@ -77,7 +78,7 @@ export function useTemplates(type?: TemplateType) {
         if (!user) throw new Error('Not authenticated');
 
         const headers: HeadersInit = {};
-        if (user.id.startsWith('dev-user-')) {
+        if (isDevUser(user.id)) {
             headers['x-user-id'] = user.id;
         }
 

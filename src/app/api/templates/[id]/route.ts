@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createTemplateService } from '@/lib/templates';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -16,12 +17,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Support Dev Auth
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -50,12 +50,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Support Dev Auth
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -82,12 +81,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Support Dev Auth
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 

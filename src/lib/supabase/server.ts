@@ -4,7 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 export async function createServerSupabaseClient() {
     const cookieStore = await cookies();
@@ -34,4 +35,23 @@ export async function createServerSupabaseClient() {
             },
         }
     );
+}
+
+/**
+ * Gets the current user ID, checking both Supabase session and development fallback headers.
+ */
+export async function getServerUserId() {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) return user.id;
+
+    try {
+        const headersList = await headers();
+        const devUserId = headersList.get('x-user-id');
+        if (isDevUser(devUserId)) return devUserId as string;
+    } catch (e) {
+        // Headers might not be available in some contexts
+    }
+
+    return null;
 }

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createPromptService } from '@/lib/prompts';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 // GET - Get single prompt
 export async function GET(
@@ -20,8 +21,8 @@ export async function GET(
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -59,8 +60,8 @@ export async function PUT(
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -100,8 +101,8 @@ export async function DELETE(
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -135,8 +136,8 @@ export async function PATCH(
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 

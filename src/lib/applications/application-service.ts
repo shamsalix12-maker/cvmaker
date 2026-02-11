@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, getServerUserId } from '@/lib/supabase/server';
 import {
     JobApplication,
     ApplicationStatus,
@@ -14,14 +14,14 @@ export class ApplicationService {
      * Create a new job application record
      */
     static async createApplication(params: Partial<JobApplication>): Promise<ApiResponse<JobApplication>> {
-        const supabase = await createServerSupabaseClient();
+        const userId = await getServerUserId();
+        if (!userId) return { success: false, error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } };
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { success: false, error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } };
+        const supabase = await createServerSupabaseClient();
 
         const newApp: Partial<JobApplication> = {
             id: uuidv4(),
-            user_id: user.id,
+            user_id: userId,
             job_title: params.job_title || 'Untitled Application',
             company_name: params.company_name || 'Generic Company',
             job_description: params.job_description || '',
@@ -84,14 +84,15 @@ export class ApplicationService {
      * List applications for the current user
      */
     static async listApplications(): Promise<ApiResponse<JobApplication[]>> {
+        const userId = await getServerUserId();
+        if (!userId) return { success: false, error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } };
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { success: false, error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } };
 
         const { data, error } = await supabase
             .from('job_applications')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('updated_at', { ascending: false });
 
         if (error) return { success: false, error: { code: error.code, message: error.message } };
@@ -123,14 +124,15 @@ export class ApplicationService {
      * Get user's comprehensive CV data
      */
     static async getLatestCV(): Promise<ComprehensiveCV | null> {
+        const userId = await getServerUserId();
+        if (!userId) return null;
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
 
         const { data, error } = await supabase
             .from('comprehensive_cvs')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('updated_at', { ascending: false })
             .limit(1)
             .maybeSingle();

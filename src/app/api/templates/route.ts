@@ -6,18 +6,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createTemplateService } from '@/lib/templates';
 import { TemplateType } from '@/lib/types';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 export async function GET(request: NextRequest) {
     try {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Support Dev Auth
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 
@@ -46,12 +46,11 @@ export async function POST(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Support Dev Auth
         let userId = user?.id;
         if (!userId) {
             const devUserId = request.headers.get('x-user-id');
-            if (devUserId && devUserId.startsWith('dev-user-')) {
-                userId = devUserId;
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
             }
         }
 

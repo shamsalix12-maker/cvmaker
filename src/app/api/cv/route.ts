@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createCVService } from '@/lib/cv/cv-service';
 import { ComprehensiveCV } from '@/lib/types';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 // GET - Retrieve user's CV
 export async function GET(request: NextRequest) {
@@ -9,9 +10,13 @@ export async function GET(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // Fallback for dev mode header if needed, but session is cleaner
-        const userIdHeader = request.headers.get('x-user-id');
-        const userId = user?.id || userIdHeader;
+        let userId = user?.id;
+        if (!userId) {
+            const devUserId = request.headers.get('x-user-id');
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
+            }
+        }
 
         if (!userId) {
             return NextResponse.json(
@@ -41,8 +46,13 @@ export async function POST(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const userIdHeader = request.headers.get('x-user-id');
-        const userId = user?.id || userIdHeader;
+        let userId = user?.id;
+        if (!userId) {
+            const devUserId = request.headers.get('x-user-id');
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
+            }
+        }
 
         if (!userId) {
             return NextResponse.json(
@@ -82,8 +92,13 @@ export async function PUT(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const userIdHeader = request.headers.get('x-user-id');
-        const userId = user?.id || userIdHeader;
+        let userId = user?.id;
+        if (!userId) {
+            const devUserId = request.headers.get('x-user-id');
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
+            }
+        }
 
         if (!userId) {
             return NextResponse.json(
@@ -129,8 +144,13 @@ export async function DELETE(request: NextRequest) {
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const userIdHeader = request.headers.get('x-user-id');
-        const userId = user?.id || userIdHeader;
+        let userId = user?.id;
+        if (!userId) {
+            const devUserId = request.headers.get('x-user-id');
+            if (isDevUser(devUserId)) {
+                userId = devUserId as string;
+            }
+        }
 
         if (!userId) {
             return NextResponse.json(

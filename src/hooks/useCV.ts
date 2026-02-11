@@ -9,6 +9,7 @@ import {
     AIProviderName
 } from '@/lib/types';
 import { validateExtractedCV, getCompletionPercentage } from '@/lib/cv/cv-validator';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 interface UseCVReturn {
     cv: ComprehensiveCV | null;
@@ -70,8 +71,13 @@ export function useCV(): UseCVReturn {
         setError(null);
 
         try {
+            const headers: HeadersInit = {};
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
             const res = await fetch('/api/cv', {
-                headers: { 'x-user-id': user.id }
+                headers
             });
 
             const data = await res.json();
@@ -98,12 +104,16 @@ export function useCV(): UseCVReturn {
         setError(null);
 
         try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
             const res = await fetch('/api/cv', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-id': user.id
-                },
+                headers,
                 body: JSON.stringify({ cv: cvData })
             });
 
@@ -130,12 +140,16 @@ export function useCV(): UseCVReturn {
         setError(null);
 
         try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
             const res = await fetch('/api/cv', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-id': user.id
-                },
+                headers,
                 body: JSON.stringify({ updates })
             });
 
@@ -162,12 +176,16 @@ export function useCV(): UseCVReturn {
         setError(null);
 
         try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
             const res = await fetch('/api/cv', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-id': user.id
-                },
+                headers,
                 body: JSON.stringify({ fieldPath, value })
             });
 
@@ -194,9 +212,14 @@ export function useCV(): UseCVReturn {
         setError(null);
 
         try {
+            const headers: HeadersInit = {};
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
             const res = await fetch('/api/cv', {
                 method: 'DELETE',
-                headers: { 'x-user-id': user.id }
+                headers
             });
 
             const data = await res.json();
@@ -227,9 +250,14 @@ export function useCV(): UseCVReturn {
         formData.append('provider', provider);
         formData.append('model', model);
 
+        const headers: HeadersInit = {};
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
         const res = await fetch('/api/cv/extract', {
             method: 'POST',
-            headers: { 'x-user-id': user.id },
+            headers,
             body: formData
         });
 
@@ -254,9 +282,14 @@ export function useCV(): UseCVReturn {
         formData.append('provider', provider);
         formData.append('model', model);
 
+        const headers: HeadersInit = {};
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
         const res = await fetch('/api/cv/extract', {
             method: 'POST',
-            headers: { 'x-user-id': user.id },
+            headers,
             body: formData
         });
 

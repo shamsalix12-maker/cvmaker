@@ -12,6 +12,7 @@ import { devLogin, devLogout, getCurrentUser } from '@/lib/auth/dev-auth';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from 'next-intl';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { DEV_USER_ID_PREFIX } from '@/lib/constants';
 
 interface AuthContextType {
     user: User | null;
@@ -51,10 +52,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setUser(mapSupabaseUser(session.user));
                     localStorage.removeItem('cv_tailor_dev_user'); // Clean up dev user if real user exists
                 } else {
-                    // Fallback to dev user if stored
                     const storedDevUser = localStorage.getItem('cv_tailor_dev_user');
                     if (storedDevUser) {
-                        setUser(JSON.parse(storedDevUser));
+                        try {
+                            const parsed = JSON.parse(storedDevUser);
+                            // Migration: If the stored ID is not a UUID (contains 'dev-user-'), clear it
+                            if (parsed.id && parsed.id.startsWith('dev-user-')) {
+                                localStorage.removeItem('cv_tailor_dev_user');
+                                setUser(null);
+                            } else {
+                                setUser(parsed);
+                            }
+                        } catch (e) {
+                            localStorage.removeItem('cv_tailor_dev_user');
+                            setUser(null);
+                        }
                     } else {
                         setUser(null);
                     }
@@ -101,8 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // 2. Fallback to Local Dev User (Mock Session)
             console.warn("Falling back to local dev user since anonymous auth failed or disabled.");
 
+            const devId = `${DEV_USER_ID_PREFIX}${Date.now().toString(16).padStart(12, '0')}`;
             const devUser: User = {
-                id: 'dev-user-' + Date.now(),
+                id: devId,
                 email,
                 name,
                 created_at: new Date().toISOString(),

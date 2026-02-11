@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Prompt } from '@/lib/types';
 import { PROMPT_CATEGORIES } from '@/lib/prompts/default-prompts';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 interface UsePromptsOptions {
     activeOnly?: boolean;
@@ -43,7 +44,7 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
             if (storedDevUser) {
                 try {
                     const user = JSON.parse(storedDevUser);
-                    if (user && user.id && user.id.startsWith('dev-user-')) {
+                    if (user && user.id && isDevUser(user.id)) {
                         headers['x-user-id'] = user.id;
                     }
                 } catch (e) {

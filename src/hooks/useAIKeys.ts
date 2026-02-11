@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { AIProviderName, AIApiKey, AIModel } from '@/lib/types';
+import { isDevUser } from '@/lib/auth/dev-auth';
 
 interface StoredKey {
     id: string;
@@ -38,7 +39,7 @@ export function useAIKeys() {
 
         try {
             const headers: HeadersInit = {};
-            if (user.id.startsWith('dev-user-')) {
+            if (isDevUser(user.id)) {
                 headers['x-user-id'] = user.id;
             }
 
@@ -67,7 +68,7 @@ export function useAIKeys() {
             const headers: HeadersInit = {
                 'Content-Type': 'application/json'
             };
-            if (user.id.startsWith('dev-user-')) {
+            if (isDevUser(user.id)) {
                 headers['x-user-id'] = user.id;
             }
 
@@ -103,7 +104,7 @@ export function useAIKeys() {
         if (!user) return;
         try {
             const headers: HeadersInit = {};
-            if (user.id.startsWith('dev-user-')) {
+            if (isDevUser(user.id)) {
                 headers['x-user-id'] = user.id;
             }
 

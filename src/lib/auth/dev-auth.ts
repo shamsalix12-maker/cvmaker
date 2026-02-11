@@ -6,11 +6,15 @@
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@/lib/types';
 import { toast } from 'sonner';
+import { DEV_USER_ID_PREFIX } from '@/lib/constants';
 
 /**
- * Development login function
- * Creates or retrieves a user by email and name
+ * Checks if a user ID is a mock dev user ID
  */
+export function isDevUser(userId: string | null | undefined): boolean {
+    if (!userId) return false;
+    return userId.startsWith(DEV_USER_ID_PREFIX) || userId.startsWith('dev-user-'); // Keep legacy support for a bit
+}
 export async function devLogin(email: string, name: string): Promise<User | null> {
     const supabase = createClient();
 
