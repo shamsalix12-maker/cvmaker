@@ -8,8 +8,9 @@ import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ApplicationDetailPage({ params }: { params: { id: string } }) {
-    const res = await ApplicationService.getApplication(params.id);
+export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
+    const { id } = await params;
+    const res = await ApplicationService.getApplication(id);
 
     if (!res.success || !res.data) {
         notFound();
