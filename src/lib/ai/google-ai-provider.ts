@@ -10,6 +10,7 @@ export class GoogleAIProvider extends BaseAIProvider {
     readonly providerName: AIProviderName = 'google';
 
     private readonly KNOWN_MODELS: AIModel[] = [
+        { model_id: 'gemini-2.0-flash', model_name: 'Gemini 2.0 Flash', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-1.5-pro', model_name: 'Gemini 1.5 Pro', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-1.5-flash', model_name: 'Gemini 1.5 Flash', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-1.0-pro', model_name: 'Gemini 1.0 Pro', provider: 'google', supports_streaming: true },
@@ -22,7 +23,8 @@ export class GoogleAIProvider extends BaseAIProvider {
     async validateKey(apiKey: string): Promise<AIValidationResult> {
         try {
             const client = this.createClient(apiKey);
-            const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            // Default to 2.0-flash for validation as it's the current flagship
+            const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
             // Make a minimal API call to verify
             await model.generateContent('Hi');
