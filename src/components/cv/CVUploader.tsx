@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles
+    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles, Plus
 } from 'lucide-react';
 import { useCV } from '@/hooks/useCV';
 import { useAIKeys } from '@/hooks/useAIKeys';
