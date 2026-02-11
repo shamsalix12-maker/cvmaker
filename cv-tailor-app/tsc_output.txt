@@ -1,9 +1,0 @@
-.next/types/validator.ts(193,31): error TS2344: Type 'typeof import("/home/k/Desktop/cvmaker/cv-tailor-app/src/app/[locale]/layout")' does not satisfy the constraint 'LayoutConfig<"/[locale]">'.
-  Types of property 'default' are incompatible.
-    Type '({ children, params: { locale } }: { children: ReactNode; params: { locale: string; }; }) => Promise<Element>' is not assignable to type 'ComponentType<LayoutProps<"/[locale]">> | ((props: LayoutProps<"/[locale]">) => void | Promise<void> | ReactNode | Promise<...>)'.
-      Type '({ children, params: { locale } }: { children: ReactNode; params: { locale: string; }; }) => Promise<Element>' is not assignable to type 'FunctionComponent<LayoutProps<"/[locale]">>'.
-        Types of parameters '__0' and 'props' are incompatible.
-          Type 'LayoutProps<"/[locale]">' is not assignable to type '{ children: ReactNode; params: { locale: string; }; }'.
-            Types of property 'params' are incompatible.
-              Property 'locale' is missing in type 'Promise<{ locale: string; }>' but required in type '{ locale: string; }'.
-src/lib/generators/index.ts(8,1): error TS2308: Module './docx-generator' has already exported a member named 'DocumentType'. Consider explicitly re-exporting to resolve the ambiguity.

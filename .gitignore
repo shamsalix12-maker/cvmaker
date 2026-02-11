@@ -1,33 +1,47 @@
 # Dependencies
-node_modules/
-.next/
-.vercel/
-dist/
-build/
+/node_modules
+/.pnpm-store
+/.vscode/
 
-# Environment
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+/build
+.vercel
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local Env Files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# TypeScript
+*.tsbuildinfo
+tsc_output.txt
 
-# Next.js
-.next/
-out/
-
-# Agent
+# Agent Artifacts
 .agent/
-
-
-# Misc
-.DS_Store
-*.pem
-.vercel
-.env*.local
+agent.md
+allproject
+blocksyml 1 to 26 blocks
+blockszaml
+master plan
+software Specification Document
+Unsaved Document 1
+tsc_final.txt
