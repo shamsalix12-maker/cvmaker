@@ -9,11 +9,13 @@ import { AIProviderName } from '@/lib/types';
 
 // POST - Validate an API key without storing it
 // POST - Validate an API key without storing it
-export async function POST(request: NextRequest) {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+import { getUserId } from '@/lib/auth/server-auth';
 
-    if (!user) {
+// POST - Validate an API key without storing it
+export async function POST(request: NextRequest) {
+    const userId = await getUserId(request);
+
+    if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -114,8 +114,15 @@ export default function CVManagerPage() {
         if (!cv) {
             // Initialize with empty CV if none exists
             updateCV({
-                personal_info: { full_name: '', email: '', phone: '', location: '' },
-                summary: '',
+                personal_info: {
+                    full_name: '',
+                    email: '',
+                    phone: '',
+                    location: '',
+                    linkedin_url: '',
+                    website_url: '',
+                    summary: ''
+                },
                 work_experience: [],
                 education: [],
                 skills: [],

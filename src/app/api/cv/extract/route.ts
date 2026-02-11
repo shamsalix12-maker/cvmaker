@@ -10,13 +10,16 @@ import { decryptApiKey } from '@/lib/encryption';
 import { parseFile } from '@/lib/parsers';
 import { AIProviderName } from '@/lib/types';
 
+import { getUserId } from '@/lib/auth/server-auth';
+
 export async function POST(request: NextRequest) {
-    const supabase = await createServerSupabaseClient();
-    const userId = request.headers.get('x-user-id');
+    const userId = await getUserId(request);
 
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await createServerSupabaseClient();
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;

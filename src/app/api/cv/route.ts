@@ -3,27 +3,17 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createCVService } from '@/lib/cv/cv-service';
 import { ComprehensiveCV } from '@/lib/types';
 import { isDevUser } from '@/lib/auth/dev-auth';
+import { getUserId } from '@/lib/auth/server-auth';
 
 // GET - Retrieve user's CV
 export async function GET(request: NextRequest) {
     try {
+        const userId = await getUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        let userId = user?.id;
-        if (!userId) {
-            const devUserId = request.headers.get('x-user-id');
-            if (isDevUser(devUserId)) {
-                userId = devUserId as string;
-            }
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
 
         const cvService = createCVService(supabase);
 
@@ -43,23 +33,12 @@ export async function GET(request: NextRequest) {
 // POST - Create or replace CV
 export async function POST(request: NextRequest) {
     try {
+        const userId = await getUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        let userId = user?.id;
-        if (!userId) {
-            const devUserId = request.headers.get('x-user-id');
-            if (isDevUser(devUserId)) {
-                userId = devUserId as string;
-            }
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
 
         const body = await request.json();
         const cvData: Partial<ComprehensiveCV> = body.cv;
@@ -89,23 +68,12 @@ export async function POST(request: NextRequest) {
 // PUT - Update specific fields of CV
 export async function PUT(request: NextRequest) {
     try {
+        const userId = await getUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        let userId = user?.id;
-        if (!userId) {
-            const devUserId = request.headers.get('x-user-id');
-            if (isDevUser(devUserId)) {
-                userId = devUserId as string;
-            }
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
 
         const body = await request.json();
         const { fieldPath, value, updates } = body;
@@ -141,23 +109,12 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete user's CV
 export async function DELETE(request: NextRequest) {
     try {
+        const userId = await getUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = await createServerSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        let userId = user?.id;
-        if (!userId) {
-            const devUserId = request.headers.get('x-user-id');
-            if (isDevUser(devUserId)) {
-                userId = devUserId as string;
-            }
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
 
         const cvService = createCVService(supabase);
 

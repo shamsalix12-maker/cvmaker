@@ -8,25 +8,16 @@ import { encryptApiKey, decryptApiKey } from '@/lib/encryption';
 import { getAIProvider } from '@/lib/ai';
 import { AIProviderName, AIApiKey } from '@/lib/types';
 import { isDevUser } from '@/lib/auth/dev-auth';
+import { getUserId } from '@/lib/auth/server-auth';
 
 // GET - List all API keys for current user (without decrypted keys)
 export async function GET(request: NextRequest) {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Support Dev Auth
-    let userId = user?.id;
-    if (!userId) {
-        const devUserId = request.headers.get('x-user-id');
-        if (isDevUser(devUserId)) {
-            userId = devUserId as string;
-        }
-    }
-
+    const userId = await getUserId(request);
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
         .from('ai_api_keys')
@@ -42,21 +33,12 @@ export async function GET(request: NextRequest) {
 
 // POST - Add or update an API key
 export async function POST(request: NextRequest) {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Support Dev Auth
-    let userId = user?.id;
-    if (!userId) {
-        const devUserId = request.headers.get('x-user-id');
-        if (isDevUser(devUserId)) {
-            userId = devUserId as string;
-        }
-    }
-
+    const userId = await getUserId(request);
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await createServerSupabaseClient();
 
     const body = await request.json();
     const { provider_name, api_key } = body;
@@ -114,21 +96,12 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Remove an API key
 export async function DELETE(request: NextRequest) {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Support Dev Auth
-    let userId = user?.id;
-    if (!userId) {
-        const devUserId = request.headers.get('x-user-id');
-        if (isDevUser(devUserId)) {
-            userId = devUserId as string;
-        }
-    }
-
+    const userId = await getUserId(request);
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await createServerSupabaseClient();
 
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get('provider');
