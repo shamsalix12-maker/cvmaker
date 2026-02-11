@@ -29,8 +29,15 @@ You can now continue pushing changes as usual, and large dependency files will b
 ## ✅ Google Authentication Setup
 
 1.  **Google Cloud Console Configured**:
-    - **Authorized JavaScript origins**: Added `https://cv-tailor-app-kappa.vercel.app` and should add `http://localhost:3000`.
-    - **Authorized redirect URIs**: Added Supabase callback `https://wsmvwbsjietvoppvytqd.supabase.co/auth/v1/callback`.
+    - **Authorized JavaScript origins**:
+        - `http://localhost:3000`
+        - `https://cv-tailor-app-kappa.vercel.app`
+    - **Authorized redirect URIs**:
+        - `https://wsmvwbsjietvoppvytqd.supabase.co/auth/v1/callback`
+        - `http://localhost:3000/en/auth/callback`
+        - `http://localhost:3000/fa/auth/callback`
+        - `https://cv-tailor-app-kappa.vercel.app/en/auth/callback`
+        - `https://cv-tailor-app-kappa.vercel.app/fa/auth/callback`
 2.  **Supabase Console Action Required**:
     - Go to **Authentication -> Configuration -> URL Configuration**.
     - Set **Site URL** to your Vercel URL.
