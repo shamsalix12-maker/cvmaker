@@ -161,7 +161,7 @@ export default function CVManagerPage() {
 
     const handleManualConfirm = async (rawText: string) => {
         try {
-            await updateCV({
+            await saveCV({
                 personal_info: {
                     full_name: '',
                     email: '',
@@ -339,11 +339,7 @@ export default function CVManagerPage() {
                                             />
                                         )}
 
-                                        <ManualEntryModal
-                                            isOpen={isManualModalOpen}
-                                            onClose={() => setIsManualModalOpen(false)}
-                                            onConfirm={handleManualConfirm}
-                                        />
+                                        )}
                                     </div>
                                 )}
 
@@ -402,6 +398,11 @@ export default function CVManagerPage() {
                         </>
                     )}
                 </div>
+                <ManualEntryModal
+                    isOpen={isManualModalOpen}
+                    onClose={() => setIsManualModalOpen(false)}
+                    onConfirm={handleManualConfirm}
+                />
             </MainLayout>
         </AuthGuard>
     );
