@@ -26,7 +26,7 @@ interface UseCVReturn {
     updateField: (fieldPath: string, value: any) => Promise<void>;
     deleteCV: () => Promise<void>;
 
-    // AI Extraction
+    // AI Extraction/Refinement
     extractFromFile: (
         file: File,
         provider: AIProviderName,
@@ -37,6 +37,12 @@ interface UseCVReturn {
         text: string,
         provider: AIProviderName,
         model: string
+    ) => Promise<CVExtractionResult>;
+
+    refineCV: (
+        instructions?: string,
+        provider?: AIProviderName,
+        model?: string
     ) => Promise<CVExtractionResult>;
 
     applyExtraction: (result: CVExtractionResult) => Promise<void>;
@@ -302,6 +308,40 @@ export function useCV(): UseCVReturn {
         return result;
     }, [user]);
 
+    const refineCV = useCallback(async (
+        instructions?: string,
+        provider?: AIProviderName,
+        model?: string
+    ): Promise<CVExtractionResult> => {
+        if (!user || !cv) throw new Error('Not authenticated or no CV to refine');
+
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json'
+        };
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
+        const res = await fetch('/api/cv/refine', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                cv,
+                instructions,
+                provider,
+                model
+            })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+            throw new Error(result.extractionNotes || 'Refinement failed');
+        }
+
+        return result;
+    }, [user, cv]);
+
     const applyExtraction = useCallback(async (result: CVExtractionResult) => {
         await saveCV(result.cv);
     }, [saveCV]);
@@ -320,6 +360,7 @@ export function useCV(): UseCVReturn {
         deleteCV,
         extractFromFile,
         extractFromText,
+        refineCV,
         applyExtraction,
     };
 }

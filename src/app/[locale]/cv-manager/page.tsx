@@ -10,13 +10,12 @@ import { CVCompletionForm } from '@/components/cv/CVCompletionForm';
 import { CVPreview } from '@/components/cv/CVPreview';
 import { CVManagerTabs } from '@/components/cv/CVManagerTabs';
 import { useCV } from '@/hooks/useCV';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { CVExtractionResult, ComprehensiveCV, CVSection } from '@/lib/types';
+import { CVSectionEditor } from '@/components/cv/CVSectionEditor';
 import {
-    FileText, Save, Trash2, CheckCircle, AlertCircle, Loader2
+    FileText, Save, Trash2, CheckCircle, AlertCircle, Loader2, Brain, Sparkles
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { MainLayout } from '@/components/layout/MainLayout';
 
@@ -37,11 +36,18 @@ export default function CVManagerPage() {
         saveCV,
         updateCV,
         deleteCV,
-        applyExtraction
+        applyExtraction,
+        refineCV
     } = useCV();
 
     const [activeTab, setActiveTab] = useState<CVTab>('upload');
     const [pendingExtraction, setPendingExtraction] = useState<CVExtractionResult | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+    const [refineInstructions, setRefineInstructions] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
+
+    // Editor State
+    const [editingSection, setEditingSection] = useState<CVSection | null>(null);
 
     // Switch to fields tab when CV is loaded or extracted
     useEffect(() => {
@@ -50,9 +56,40 @@ export default function CVManagerPage() {
         }
     }, [cv, activeTab]);
 
+    // Handle refinement
+    const handleRefine = async () => {
+        if (!cv) return;
+
+        setIsRefining(true);
+        try {
+            const result = await refineCV(refineInstructions);
+
+            if (result.success) {
+                await applyExtraction(result);
+                setAiFeedback(result.extractionNotes || null);
+                setRefineInstructions('');
+
+                toast.success(t('refinement_success'), {
+                    description: t('refinement_success_desc'),
+                });
+            } else {
+                throw new Error(result.extractionNotes || 'Refinement failed');
+            }
+        } catch (err: any) {
+            toast.error(t('refinement_error'), {
+                description: err.message,
+            });
+        } finally {
+            setIsRefining(false);
+        }
+    };
+
     // Handle extraction complete
     const handleExtractionComplete = async (result: CVExtractionResult) => {
         setPendingExtraction(result);
+        if (result.extractionNotes) {
+            setAiFeedback(result.extractionNotes);
+        }
 
         try {
             await applyExtraction(result);
@@ -95,6 +132,7 @@ export default function CVManagerPage() {
         try {
             await deleteCV();
             setActiveTab('upload');
+            setAiFeedback(null);
 
             toast.success(t('deleted'), {
                 description: t('cv_deleted'),
@@ -197,21 +235,74 @@ export default function CVManagerPage() {
                                     />
                                 )}
 
-                                {/* Fields Tab */}
+                                {/* Refinement Tab / Section */}
                                 {activeTab === 'fields' && cv && (
-                                    <>
+                                    <div className="space-y-6">
+                                        {/* AI Feedback / Notes */}
+                                        {aiFeedback && (
+                                            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+                                                <CardHeader className="pb-2">
+                                                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-800 dark:text-blue-300">
+                                                        <Brain className="h-4 w-4" />
+                                                        {t('ai_feedback')}
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p className="text-sm text-blue-700 dark:text-blue-400 whitespace-pre-wrap italic">
+                                                        "{aiFeedback}"
+                                                    </p>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
                                         {/* Incomplete Fields Warning */}
                                         {incompleteFields.length > 0 && (
                                             <CVCompletionForm
                                                 incompleteFields={incompleteFields}
                                                 onFieldClick={(section) => {
-                                                    // In a real implementation this would focus the field
-                                                    console.log('Navigate to section:', section);
-                                                    // For now we just tell the user where to look
-                                                    toast.info(`Please check the ${section.replace('_', ' ')} section below`);
+                                                    setEditingSection(section as CVSection);
                                                 }}
                                             />
                                         )}
+
+                                        {/* AI Refinement Tool */}
+                                        <Card className="border-primary/20 bg-primary/5">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Sparkles className="h-5 w-5 text-primary" />
+                                                    {t('ai_refinement_title')}
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    {t('ai_refinement_desc')}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <Textarea
+                                                    placeholder={t('refine_placeholder')}
+                                                    value={refineInstructions}
+                                                    onChange={(e) => setRefineInstructions(e.target.value)}
+                                                    rows={3}
+                                                    disabled={isRefining}
+                                                />
+                                                <Button
+                                                    className="w-full"
+                                                    onClick={handleRefine}
+                                                    disabled={isRefining || saving}
+                                                >
+                                                    {isRefining ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                            {t('refining')}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="h-4 w-4 mr-2" />
+                                                            {t('refine_button')}
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
 
                                         {/* Field Display */}
                                         <CVFieldDisplay
@@ -219,8 +310,20 @@ export default function CVManagerPage() {
                                             fieldStatuses={fieldStatuses}
                                             confidence={pendingExtraction?.confidence || 85}
                                             onUpdate={handleCVUpdate}
+                                            onEditSection={(section) => setEditingSection(section as CVSection)}
                                         />
-                                    </>
+
+                                        {/* Section Editor */}
+                                        {cv && editingSection && (
+                                            <CVSectionEditor
+                                                cv={cv}
+                                                section={editingSection}
+                                                isOpen={!!editingSection}
+                                                onClose={() => setEditingSection(null)}
+                                                onSave={handleCVUpdate}
+                                            />
+                                        )}
+                                    </div>
                                 )}
 
                                 {/* Preview Tab */}

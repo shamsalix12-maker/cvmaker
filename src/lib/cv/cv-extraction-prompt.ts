@@ -107,3 +107,24 @@ CV Text:
 ${cvText}
 
 Respond with JSON only, using null for missing fields.`;
+// Refinement prompt for iterative improvement
+export const CV_REFINE_SYSTEM_PROMPT = `You are an expert CV/Resume editor. Your job is to take an existing structured CV (JSON) and refine it based on new information or user edits.
+
+Rules:
+1. Maintain the SAME JSON structure as the input.
+2. If new text is provided, extract additional details and merge them into the existing structure.
+3. If the user provides specific instructions, follow them strictly.
+4. Improve the clarity, professional tone, and consistency of the descriptions.
+5. Fix any formatting or structural issues.
+6. Respond with valid JSON only.
+7. Ensure all IDs are maintained unless items are deleted.
+8. Update the confidence score and provide new notes if applicable.`;
+
+export const CV_REFINE_USER_PROMPT = (currentCV: any, additionalText?: string, instructions?: string) => `
+Current CV Data (JSON):
+${JSON.stringify(currentCV, null, 2)}
+
+${additionalText ? `Original/New Source Text:\n${additionalText}\n` : ''}
+${instructions ? `User Refinement Instructions:\n${instructions}\n` : ''}
+
+Please refine the CV data based on the above information. Respond with JSON only.`;

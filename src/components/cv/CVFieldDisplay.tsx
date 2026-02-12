@@ -15,6 +15,7 @@ interface CVFieldDisplayProps {
     fieldStatuses: CVFieldStatus[];
     confidence: number;
     onUpdate: (updates: Partial<ComprehensiveCV>) => void;
+    onEditSection?: (section: string) => void;
     className?: string;
 }
 
@@ -23,6 +24,7 @@ export function CVFieldDisplay({
     fieldStatuses,
     confidence,
     onUpdate,
+    onEditSection,
     className
 }: CVFieldDisplayProps) {
     const t = useTranslations('cv');
@@ -57,7 +59,7 @@ export function CVFieldDisplay({
                             <InfoIcon className="h-5 w-5 text-primary" />
                             {t('personal_info')}
                         </CardTitle>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => onEditSection?.('personal_info')}>
                             <PenSquare className="h-4 w-4 mr-1" />
                             {t('edit')}
                         </Button>
@@ -99,7 +101,7 @@ export function CVFieldDisplay({
                             <BriefcaseIcon className="h-5 w-5 text-primary" />
                             {t('work_experience')}
                         </CardTitle>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => onEditSection?.('work_experience')}>
                             <PenSquare className="h-4 w-4 mr-1" />
                             {t('edit')}
                         </Button>
@@ -154,8 +156,9 @@ export function CVFieldDisplay({
                             <GraduationCapIcon className="h-5 w-5 text-primary" />
                             {t('education')}
                         </CardTitle>
-                        <Button variant="ghost" size="sm">
-                            <PenSquare className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={() => onEditSection?.('education')}>
+                            <PenSquare className="h-4 w-4 mr-1" />
+                            {t('edit')}
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -188,8 +191,9 @@ export function CVFieldDisplay({
                             <EyeIcon className="h-5 w-5 text-primary" />
                             {t('skills')}
                         </CardTitle>
-                        <Button variant="ghost" size="sm">
-                            <PenSquare className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={() => onEditSection?.('skills')}>
+                            <PenSquare className="h-4 w-4 mr-1" />
+                            {t('edit')}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -208,6 +212,27 @@ export function CVFieldDisplay({
                     </CardContent>
                 </Card>
 
+                {/* Projects */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                            <BriefcaseIcon className="h-5 w-5 text-primary" />
+                            {t('projects')}
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => onEditSection?.('projects')}>
+                            <PenSquare className="h-4 w-4 mr-1" />
+                            {t('edit')}
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {(cv.projects || []).map((proj, idx) => (
+                            <div key={proj.id || idx} className="border-b last:border-0 pb-3 last:pb-0">
+                                <h4 className="font-medium text-sm">{proj.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{proj.description}</p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
             </div>
 
         </div>

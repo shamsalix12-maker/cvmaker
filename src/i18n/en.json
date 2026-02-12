@@ -95,7 +95,16 @@
         "completion": "{percent}% complete",
         "save_cv": "Save CV",
         "saving": "Saving...",
-        "delete_cv": "Delete CV"
+        "delete_cv": "Delete CV",
+        "ai_feedback": "AI Extraction Feedback",
+        "ai_refinement_title": "AI Consolidator & Refiner",
+        "ai_refinement_desc": "Manually corrected some fields? Or have more info? Ask AI to consolidate and professionally polish your comprehensive CV.",
+        "refine_placeholder": "Example: I added my new address and fixed the company name in the second experience. please polish the descriptions...",
+        "refine_button": "Refine & Consolidate",
+        "refining": "Refining...",
+        "refinement_success": "CV Refined Successfully",
+        "refinement_success_desc": "AI has successfully refined your CV based on your instructions.",
+        "refinement_error": "Refinement Failed"
     },
     "dashboard": {
         "title": "Dashboard",
