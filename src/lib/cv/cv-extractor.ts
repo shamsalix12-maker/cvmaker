@@ -29,18 +29,30 @@ function transformAICVData(parsed: any, rawText?: string): Partial<Comprehensive
             id: item.id || generateId()
         }));
 
+    // Smart mapping for personal info
+    const pi = parsed.personal_info || parsed.personal || parsed.profile || {};
+    const personal_info = {
+        full_name: pi.full_name || pi.name || pi.fullName || pi.name_and_surname || '',
+        email: pi.email || pi.email_address || pi.contact_email || '',
+        phone: pi.phone || pi.phone_number || pi.mobile || pi.contact_number || '',
+        location: pi.location || pi.address || pi.city || pi.permanent_address || '',
+        linkedin_url: pi.linkedin_url || pi.linkedin || '',
+        website_url: pi.website_url || pi.website || pi.portfolio || '',
+        summary: pi.summary || pi.professional_summary || pi.about || pi.research_summary || '',
+    };
+
     return {
-        personal_info: parsed.personal_info || {},
-        work_experience: addIds(parsed.work_experience),
-        education: addIds(parsed.education),
-        skills: parsed.skills || [],
-        certifications: addIds(parsed.certifications),
-        languages: (parsed.languages || []).map((l: any) => ({
-            language: l.language || '',
+        personal_info,
+        work_experience: addIds(parsed.work_experience || parsed.experience || parsed.work_history || parsed.historical_positions || []),
+        education: addIds(parsed.education || parsed.educational_qualification || parsed.academic_background || parsed.edu || []),
+        skills: parsed.skills || parsed.technical_proficiency || parsed.competencies || [],
+        certifications: addIds(parsed.certifications || parsed.certificates || parsed.awards || []),
+        languages: (parsed.languages || parsed.language_proficiency || []).map((l: any) => ({
+            language: l.language || l.name || (typeof l === 'string' ? l : ''),
             proficiency: (l.proficiency?.toLowerCase() || 'intermediate') as any,
         })),
-        projects: addIds(parsed.projects),
-        additional_sections: addIds(parsed.additional_sections),
+        projects: addIds(parsed.projects || parsed.research_projects || []),
+        additional_sections: addIds(parsed.additional_sections || parsed.other_info || []),
         raw_text: rawText || parsed.raw_text,
     };
 }
@@ -70,7 +82,7 @@ export async function extractCVWithAI(
                 { id: 'sys-1', role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT, timestamp: new Date().toISOString() },
                 { id: 'usr-1', role: 'user', content: CV_EXTRACTION_USER_PROMPT(rawText), timestamp: new Date().toISOString() },
             ],
-            jsonMode: aiProvider !== 'google',
+            jsonMode: true,
         };
 
         const response = await provider.complete(config, options);

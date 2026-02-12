@@ -53,10 +53,7 @@ export class GoogleAIProvider extends BaseAIProvider {
             systemInstruction: options.messages.find(m => m.role === 'system')?.content,
         });
 
-        // Combine history into a single prompt for simpler extraction
-        // Gemini generateContent is very reliable for this
         const userMessages = options.messages.filter(m => m.role !== 'system');
-        const lastMessage = userMessages[userMessages.length - 1];
 
         const result = await model.generateContent({
             contents: userMessages.map(m => ({
@@ -66,7 +63,7 @@ export class GoogleAIProvider extends BaseAIProvider {
             generationConfig: {
                 temperature: options.temperature ?? config.temperature ?? 0.1,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                responseMimeType: "text/plain",
+                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
             }
         });
 
@@ -94,7 +91,7 @@ export class GoogleAIProvider extends BaseAIProvider {
             generationConfig: {
                 temperature: options.temperature ?? config.temperature ?? 0.1,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                responseMimeType: "text/plain",
+                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
             }
         });
 
