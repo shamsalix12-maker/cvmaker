@@ -52,34 +52,26 @@ export class GoogleAIProvider extends BaseAIProvider {
         const client = this.createClient(config.apiKey);
         const model = client.getGenerativeModel({
             model: options.model,
+            systemInstruction: options.messages.find(m => m.role === 'system')?.content,
+        });
+
+        // Combine history into a single prompt for simpler extraction
+        // Gemini generateContent is very reliable for this
+        const userMessages = options.messages.filter(m => m.role !== 'system');
+        const lastMessage = userMessages[userMessages.length - 1];
+
+        const result = await model.generateContent({
+            contents: userMessages.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            })),
             generationConfig: {
-                temperature: options.temperature ?? config.temperature ?? 0.7,
+                temperature: options.temperature ?? config.temperature ?? 0.1,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                // Using text/plain is more robust for wide range of models and prevents 
-                // "Cannot coerce the result to a single JSON object" error.
-                // Our BaseAIProvider.parseJsonResponse handles extraction from text.
                 responseMimeType: "text/plain",
             }
         });
 
-        // Convert messages to Gemini format
-        const history = options.messages
-            .filter(m => m.role !== 'system')
-            .slice(0, -1)
-            .map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            }));
-
-        const systemInstruction = options.messages.find(m => m.role === 'system')?.content;
-        const lastMessage = options.messages[options.messages.length - 1];
-
-        const chat = model.startChat({
-            history,
-            systemInstruction
-        });
-
-        const result = await chat.sendMessage(lastMessage.content);
         return result.response.text();
     }
 
@@ -91,30 +83,22 @@ export class GoogleAIProvider extends BaseAIProvider {
         const client = this.createClient(config.apiKey);
         const model = client.getGenerativeModel({
             model: options.model,
+            systemInstruction: options.messages.find(m => m.role === 'system')?.content,
+        });
+
+        const userMessages = options.messages.filter(m => m.role !== 'system');
+
+        const result = await model.generateContentStream({
+            contents: userMessages.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            })),
             generationConfig: {
-                temperature: options.temperature ?? config.temperature ?? 0.7,
+                temperature: options.temperature ?? config.temperature ?? 0.1,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
                 responseMimeType: "text/plain",
             }
         });
-
-        const history = options.messages
-            .filter(m => m.role !== 'system')
-            .slice(0, -1)
-            .map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            }));
-
-        const systemInstruction = options.messages.find(m => m.role === 'system')?.content;
-        const lastMessage = options.messages[options.messages.length - 1];
-
-        const chat = model.startChat({
-            history,
-            systemInstruction
-        });
-
-        const result = await chat.sendMessageStream(lastMessage.content);
 
         let fullResponse = '';
         for await (const chunk of result.stream) {

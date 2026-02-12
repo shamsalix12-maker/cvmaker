@@ -95,7 +95,7 @@ export async function extractCVWithAI(
             { id: 'sys-1', role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT, timestamp: new Date().toISOString() },
             { id: 'usr-1', role: 'user', content: CV_EXTRACTION_USER_PROMPT(rawText), timestamp: new Date().toISOString() },
         ],
-        jsonMode: true, // Request JSON output where supported
+        jsonMode: aiProvider !== 'google', // Request JSON output only for non-Google providers to avoid SDK coercion issues
     };
 
     try {
@@ -176,7 +176,7 @@ export async function refineCVWithAI(
             { id: 'sys-refine', role: 'system', content: CV_REFINE_SYSTEM_PROMPT, timestamp: new Date().toISOString() },
             { id: 'usr-refine', role: 'user', content: CV_REFINE_USER_PROMPT(currentCV, additionalText, instructions), timestamp: new Date().toISOString() },
         ],
-        jsonMode: true,
+        jsonMode: aiProvider !== 'google',
     };
 
     try {
