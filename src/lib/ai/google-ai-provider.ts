@@ -10,10 +10,8 @@ export class GoogleAIProvider extends BaseAIProvider {
     readonly providerName: AIProviderName = 'google';
 
     private readonly KNOWN_MODELS: AIModel[] = [
-        { model_id: 'gemini-2.5-flash', model_name: 'Gemini 2.5 Flash', provider: 'google', supports_streaming: true },
-        { model_id: 'gemini-2.5-pro', model_name: 'Gemini 2.5 Pro', provider: 'google', supports_streaming: true },
-        { model_id: 'gemini-2.5-flash-lite', model_name: 'Gemini 2.5 Flash Lite', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-2.0-flash', model_name: 'Gemini 2.0 Flash', provider: 'google', supports_streaming: true },
+        { model_id: 'gemini-2.0-flash-exp', model_name: 'Gemini 2.0 Flash (Experimental)', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-1.5-pro', model_name: 'Gemini 1.5 Pro', provider: 'google', supports_streaming: true },
         { model_id: 'gemini-1.5-flash', model_name: 'Gemini 1.5 Flash', provider: 'google', supports_streaming: true },
     ];
@@ -25,8 +23,8 @@ export class GoogleAIProvider extends BaseAIProvider {
     async validateKey(apiKey: string): Promise<AIValidationResult> {
         try {
             const client = this.createClient(apiKey);
-            // Use gemini-2.5-flash for validation as it's the latest and confirmed available
-            const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            // Use gemini-2.0-flash for validation as it's the stable latest
+            const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
             // Make a minimal API call to verify
             await model.generateContent('Hi');
@@ -55,7 +53,10 @@ export class GoogleAIProvider extends BaseAIProvider {
             generationConfig: {
                 temperature: options.temperature ?? config.temperature ?? 0.7,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
+                // Using text/plain is more robust for wide range of models and prevents 
+                // "Cannot coerce the result to a single JSON object" error.
+                // Our BaseAIProvider.parseJsonResponse handles extraction from text.
+                responseMimeType: "text/plain",
             }
         });
 
@@ -91,7 +92,7 @@ export class GoogleAIProvider extends BaseAIProvider {
             generationConfig: {
                 temperature: options.temperature ?? config.temperature ?? 0.7,
                 maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
+                responseMimeType: "text/plain",
             }
         });
 
