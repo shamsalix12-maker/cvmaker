@@ -11,6 +11,7 @@ import { CVPreview } from '@/components/cv/CVPreview';
 import { CVManagerTabs } from '@/components/cv/CVManagerTabs';
 import { useCV } from '@/hooks/useCV';
 import { CVSectionEditor } from '@/components/cv/CVSectionEditor';
+import { ManualEntryModal } from '@/components/cv/ManualEntryModal';
 import {
     FileText, Save, Trash2, CheckCircle, AlertCircle, Loader2, Brain, Sparkles
 } from 'lucide-react';
@@ -48,6 +49,7 @@ export default function CVManagerPage() {
     const [aiFeedback, setAiFeedback] = useState<string | null>(null);
     const [refineInstructions, setRefineInstructions] = useState('');
     const [isRefining, setIsRefining] = useState(false);
+    const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
     // Editor State
     const [editingSection, setEditingSection] = useState<CVSection | null>(null);
@@ -154,9 +156,12 @@ export default function CVManagerPage() {
     const handleManualStart = () => {
         setPendingExtraction(null);
         setAiFeedback(null);
-        if (!cv) {
-            // Initialize with empty CV if none exists
-            updateCV({
+        setIsManualModalOpen(true);
+    };
+
+    const handleManualConfirm = async (rawText: string) => {
+        try {
+            await updateCV({
                 personal_info: {
                     full_name: '',
                     email: '',
@@ -169,12 +174,17 @@ export default function CVManagerPage() {
                 work_experience: [],
                 education: [],
                 skills: [],
-                languages: [],
+                projects: [],
                 certifications: [],
-                projects: []
+                languages: [],
+                additional_sections: [],
+                raw_text: rawText
             });
+            toast.success(t('changes_saved'));
+            setActiveTab('fields');
+        } catch (err) {
+            toast.error(t('save_error'));
         }
-        setActiveTab('fields');
     };
 
     return (
@@ -328,6 +338,12 @@ export default function CVManagerPage() {
                                                 onSave={handleCVUpdate}
                                             />
                                         )}
+
+                                        <ManualEntryModal
+                                            isOpen={isManualModalOpen}
+                                            onClose={() => setIsManualModalOpen(false)}
+                                            onConfirm={handleManualConfirm}
+                                        />
                                     </div>
                                 )}
 
