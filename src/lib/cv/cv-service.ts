@@ -50,16 +50,16 @@ export class CVService {
     }
 
     async upsertCV(userId: string, cv: Partial<ComprehensiveCV>): Promise<ComprehensiveCV> {
-        const dbData = this.mapCVToDatabase(userId, cv);
+        // First check if CV exists
+        const existing = await this.getCV(userId);
 
-        const { data, error } = await this.supabase
-            .from('comprehensive_cvs')
-            .upsert(dbData, { onConflict: 'user_id' })
-            .select()
-            .single();
-
-        if (error) throw error;
-        return this.mapDatabaseToCV(data);
+        if (existing) {
+            // Update
+            return this.updateCV(userId, cv);
+        } else {
+            // Create
+            return this.createCV(userId, cv);
+        }
     }
 
     async deleteCV(userId: string): Promise<void> {
