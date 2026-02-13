@@ -10,4 +10,8 @@
         - Secondary: Rule-based fallback (`generateBasicGaps`).
         - Quality Assessment: Detailed scoring system (`assessFieldQuality`) in `cv-validator.ts`.
     - **Refinement**: Uses `safeRefineCV` to merge new data without losing existing work.
-- **Action**: Creating `docs/performance_report.md` with detailed breakdown.
+- **Action**: Expanding `docs/performance_report.md` with line-by-line technical details of JSON repair, scoring logic, and safe-merge.
+- **Technical Detail Updated**:
+    - Explained `safeRefineCV` merge logic (never delete).
+    - Detailed `JSON repair` mechanism (bracket counting).
+    - Clarified scoring breakdown in `assessFieldQuality`.

@@ -5,44 +5,43 @@
 
 ---
 
-## ۱. معماری استخراج (Extraction Architecture)
+## معماری استخراج (Technical Deep-Dive: Extraction)
 
-ماژول استخراج از یک سیستم **Domain-Aware** و **Multi-Stage** برای دقت حداکثری استفاده می‌کند.
+فرآیند استخراج در `src/lib/cv/multi-stage-extractor.ts` مدیریت می‌شود. جزییات خط‌به‌خط به شرح زیر است:
 
-- **Multi-Stage Extraction**: برای جلوگیری از مشکلاتی مانند Truncation (قطع شدن پاسخ AI) و Data Loss، فرآیند استخراج به مراحل زیر تقسیم شده است:
-    1.  **Personal Info**: استخراج اطلاعات تماس و خلاصه حرفه‌ای.
-    2.  **Work Experience**: استخراج تمام سوابق کاری به صورت کامل.
-    3.  **Education & Skills**: استخراج سوابق تحصیلی، مهارت‌ها و پروژه‌ها.
-    4.  **Gap Analysis**: تحلیل نهایی و شناسایی نقاط ضعف.
-- **Domain-Awareness**: پرامپت‌ها بر اساس حوزه‌های انتخابی کاربر (مانند Software Engineering, Academic, etc) شخصی‌سازی می‌شوند تا کلمات کلیدی و بخش‌های اختصاصی هر حوزه شناسایی شوند.
+### ۱. جلوگیری از Truncation و خرابی JSON
+- **Multi-Stage Processing (Lines 50-75)**: به جای یک درخواست سنگین، استخراج در ۴ مرحله (`personal_info`, `work_experience`, `education_skills`, `gap_analysis`) انجام می‌شود. این کار باعث می‌شود Token Limit خروجی شکسته نشود.
+- **JSON Repair System (Lines 362-480)**: 
+    - ابتدا تگ‌های Markdown حذف می‌شوند.
+    - در صورت نیمه‌کاره ماندن پاسخ AI، سیستم با شمارش براکت‌ها `{}` و کروشه‌ها `[]` تلاش می‌کند ساختار JSON را ببندد.
+    - اگر باز هم پارس نشد، با Regex مقادیر کلیدی مانند ایمیل و نام را استخراج می‌کند (Partial Extraction).
 
----
+### ۲. اعتبارسنجی و Scoring (Technical Deep-Dive: Validation)
 
-## ۲. شناسایی گپ‌ها و نواقص (Gap Detection Logic)
+در `src/lib/cv/cv-validator.ts` منطق امتیازدهی دقیقی وجود دارد:
+- **Base Completion (Lines 25-82)**: فیلدهای `full_name`, `email` و `summary` اجباری هستند. هر بخش وجود داشته باشد امتیاز مثبت می‌گیرد.
+- **Scoring Logic (Lines 220-439)**:
+    - **Summary**: اگر زیر ۱۰ کلمه باشد امتیاز کمی می‌گیرد. وجود کلمات عملیاتی (Action Verbs) مانند "Led", "Built" امتیاز را بالا می‌برد.
+    - **Work Experience**: برای هر سابقه، وجود "Job Title", "Company" و "Dates" الزامی است. عدم وجود اعداد (Metrics) در "Achievements" به عنوان یک نقص (Issue) ثبت می‌شود.
+    - **Skills**: تکراری بودن مهارت‌ها یا استفاده از کلمات خیلی عمومی امتیاز را کاهش می‌دهد.
 
-سیستم به سه لایه برای پیدا کردن گپ‌ها مجهز است:
+### ۳. مدیریت امن داده‌ها (Technical Deep-Dive: Safe Merge)
 
-### الف) تحلیل مبتنی بر هوش مصنوعی (AI-Driven)
-در هر مرحله از استخراج، AI موظف است موارد زیر را بررسی کند:
-- بخش‌های مفقوده (Missing Sections)
-- توضیحات ضعیف یا خیلی کوتاه (Weak Descriptions)
-- نبود معیارهای قابل اندازه‌گیری (Missing Metrics/Numbers)
-
-### ب) قوانین Fallback (Rule-Based)
-در صورتی که هوش مصنوعی موفق به شناسایی گپ‌ها نشود، تابع `generateBasicGaps` در فایل `cv-extractor.ts` وارد عمل شده و فیلدهای حیاتی (تلفن، لینکدین، خلاصه) را چک می‌کند.
-
-### ج) ارزیابی کیفیت (Quality Assessment)
-توابع موجود در `cv-validator.ts` محتوا را از نظر طول، ساختار و محتوا رتبه‌بندی می‌کنند (`weak` تا `excellent`).
+یکی از بخش‌های حیاتی `safeRefineCV` (Lines 647-805 در `multi-stage-extractor.ts`) است:
+- **No-Override Principle**: داده‌های موجود هرگز رونویسی (Overwrite) نمی‌شوند مگر اینکه فیلد فعلی خالی باشد.
+- **Safe Work Merge**: وقتی کاربر اطلاعات جدیدی درباره یک شغل می‌دهد، سیستم بر اساس `id` یا ترکیب `company + title` شغل را پیدا کرده و فقط فیلدهای خالی را پر می‌کند. اگر توضیحات جدید طولانی‌تر از قبلی باشد، جایگزین می‌شود.
+- **Skill Merging**: مهارت‌ها به صورت یک `Set` غیرتکراری (Unique) با هم ادغام می‌شوند تا لیست مهارت‌ها تمیز باقی بماند.
 
 ---
 
-## ۳. مدیریت و رفع گپ‌ها (Gap Management & Refinement)
+## تحلیل پرامپت‌ها (Prompt Engineering Details)
 
-فرآیند اصلاح رزومه (Refinement) با دقت بسیار بالا طراحی شده است تا تجربه کاربر تضمین شود:
+در فایل `src/lib/cv/cv-extraction-prompt.ts`:
+- **System Instructions**: دستور العمل‌های صریحی (Lines 62-70) برای عدم خلاصه کردن (Never Summarize) و حفظ زبان اصلی رزومه به AI داده می‌شود.
+- **Domain Context (Lines 314-356)**: بر اساس حوزه (مثلا Software), کلمات کلیدی خاصی به پرامپت اضافه می‌شود تا AI بداند دنبال چه مهارت‌هایی بگردد.
 
-- **Safe Refine Logic**: تابع `safeRefineCV` در فایل `multi-stage-extractor.ts` تضمین می‌کند که در هنگام ادغام اطلاعات جدید، داده‌های قبلی هرگز پاک نشوند (Merge-Only approach).
-- **Interactive Refinement**: کاربر می‌تواند به صورت مستقیم به هر گپ پاسخ دهد و AI آن را در بخش صحیح رزومه جایگذاری می‌کند.
-- **Multi-Language Support**: سیستم زبان اصلی رزومه را تشخیص داده و ورودی‌های کاربر را در صورت نیاز ترجمه می‌کند تا یکپارچگی زبان حفظ شود.
+---
+> این گزارش فنی بر اساس کد تست شده در فایل‌های `src/lib/cv/*.ts` تهیه شده است.
 
 ---
 
