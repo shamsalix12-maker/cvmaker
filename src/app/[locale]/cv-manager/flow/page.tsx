@@ -1,17 +1,16 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { CVCompletionFlow } from '@/components/cv/CVCompletionFlow';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { toast } from 'sonner';
 import { ComprehensiveCV } from '@/lib/types';
-import { useCV } from '@/hooks/useCV';
 
-export default function CVManagerPage() {
+export default function CVFlowPage() {
   const params = useParams();
+  const router = useRouter();
   const locale = params.locale as 'en' | 'fa';
-  const { refineCV } = useCV();
 
   const handleComplete = async (cv: Partial<ComprehensiveCV>) => {
     try {
@@ -28,6 +27,7 @@ export default function CVManagerPage() {
           locale === 'fa' ? 'رزومه ذخیره شد!' : 'CV Saved!',
           { description: locale === 'fa' ? 'رزومه جامع شما با موفقیت ذخیره شد.' : 'Your comprehensive CV has been saved successfully.' }
         );
+        router.push(`/${locale}/cv-manager`);
       } else {
         throw new Error(result.error || 'Failed to save');
       }
@@ -49,7 +49,6 @@ export default function CVManagerPage() {
           locale={locale}
           aiProvider={aiProvider}
           aiModel={aiModel}
-          refineCV={refineCV}
           onComplete={handleComplete}
         />
       </MainLayout>

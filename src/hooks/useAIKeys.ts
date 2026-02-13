@@ -37,6 +37,25 @@ export function useAIKeys() {
         setLoading(true);
         setError(null);
 
+        // DEV MODE: Load from localStorage
+        if (isDevUser(user.id)) {
+            try {
+                const storedKeys = localStorage.getItem('ai_api_keys_dev');
+                if (storedKeys) {
+                    const keys = JSON.parse(storedKeys);
+                    console.log('[useAIKeys] Dev Mode: Loaded keys from localStorage', keys.length);
+                    setKeys(keys);
+                } else {
+                    setKeys([]);
+                }
+            } catch (e) {
+                console.error('[useAIKeys] Failed to load local keys:', e);
+                setKeys([]);
+            }
+            setLoading(false);
+            return;
+        }
+
         try {
             const headers: HeadersInit = {};
             if (isDevUser(user.id)) {
@@ -66,6 +85,58 @@ export function useAIKeys() {
     const addKey = useCallback(async (provider: AIProviderName, apiKey: string) => {
         if (!user) return;
         setError(null);
+
+        // DEV MODE: Save to localStorage instead of DB
+        if (isDevUser(user.id)) {
+            console.log('[useAIKeys] Dev Mode: Saving API key to localStorage');
+            try {
+                // Validate the key first
+                const res = await fetch('/api/ai/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider_name: provider,
+                        api_key: apiKey
+                    })
+                });
+                const validation = await res.json();
+
+                if (!validation.valid) {
+                    throw new Error(validation.error || 'Invalid API key');
+                }
+
+                // Save to localStorage
+                const storedKeys = localStorage.getItem('ai_api_keys_dev');
+                let keys = storedKeys ? JSON.parse(storedKeys) : [];
+                
+                // Remove existing key for this provider
+                keys = keys.filter((k: any) => k.provider_name !== provider);
+                
+                // Add new key
+                keys.push({
+                    id: `dev-key-${provider}`,
+                    provider_name: provider,
+                    api_key: apiKey,
+                    is_valid: true,
+                    available_models: validation.models || [],
+                    token_balance: null,
+                    last_validated_at: new Date().toISOString()
+                });
+                
+                localStorage.setItem('ai_api_keys_dev', JSON.stringify(keys));
+                
+                await fetchKeys();
+                
+                return {
+                    valid: true,
+                    error: null,
+                    models: validation.models
+                };
+            } catch (err: any) {
+                setError(err.message);
+                throw err;
+            }
+        }
 
         try {
             const headers: HeadersInit = {
@@ -105,6 +176,24 @@ export function useAIKeys() {
 
     const removeKey = useCallback(async (provider: AIProviderName) => {
         if (!user) return;
+
+        // DEV MODE: Remove from localStorage
+        if (isDevUser(user.id)) {
+            try {
+                const storedKeys = localStorage.getItem('ai_api_keys_dev');
+                if (storedKeys) {
+                    let keys = JSON.parse(storedKeys);
+                    keys = keys.filter((k: any) => k.provider_name !== provider);
+                    localStorage.setItem('ai_api_keys_dev', JSON.stringify(keys));
+                    setKeys(keys);
+                    console.log('[useAIKeys] Dev Mode: Removed key from localStorage');
+                }
+            } catch (e) {
+                console.error('[useAIKeys] Failed to remove local key:', e);
+            }
+            return;
+        }
+
         try {
             const headers: HeadersInit = {};
             if (isDevUser(user.id)) {

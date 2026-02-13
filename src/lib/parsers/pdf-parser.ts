@@ -22,8 +22,14 @@ export async function parsePdf(file: File): Promise<{ text: string }> {
 
         // Dynamic import logic for better compatibility
         const pdfParseModule = (await import('pdf-parse')) as any;
-        // Handle common variations in how pdf-parse is exported
-        const pdfParse = pdfParseModule.default || pdfParseModule.pdfParse || pdfParseModule;
+        // Handle variations in how the mehmet-kozan/pdf-parse fork is exported
+        const pdfParse = pdfParseModule.PDFParse || pdfParseModule.default || pdfParseModule;
+
+        if (typeof pdfParse !== 'function') {
+            console.error('[PDF Parser] pdf-parse is not a function. Keys:', Object.keys(pdfParseModule));
+            throw new Error('PDF parsing library initialization failed');
+        }
+
         const data = await pdfParse(buffer);
 
         if (!data.text || data.text.trim().length === 0) {

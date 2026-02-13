@@ -39,11 +39,15 @@ interface UseCVReturn {
         model: string
     ) => Promise<CVExtractionResult>;
 
-    refineCV: (
-        instructions?: string,
-        provider?: AIProviderName,
-        model?: string
-    ) => Promise<CVExtractionResult>;
+    refineCV: (params: {
+        resolvedGaps?: { gapId: string; userInput: string }[];
+        selectedDomains?: string[];
+        instructions?: string;
+        additionalText?: string;
+        cvLanguage?: string;
+        provider?: AIProviderName;
+        model?: string;
+    }) => Promise<CVExtractionResult>;
 
     applyExtraction: (result: CVExtractionResult) => Promise<void>;
 }
@@ -60,21 +64,27 @@ export function useCV(): UseCVReturn {
     const fieldStatuses = cv ? validateExtractedCV(cv) : [];
     const completionPercentage = getCompletionPercentage(fieldStatuses);
 
-    // Fetch CV on mount
-    useEffect(() => {
-        if (user) {
-            fetchCV();
-        } else {
-            setCV(null);
-            setLoading(false);
-        }
-    }, [user?.id]);
 
     const fetchCV = useCallback(async () => {
         if (!user) return;
 
         setLoading(true);
         setError(null);
+
+        // DEV MODE: First check Local Storage to prevent overwrite
+        if (isDevUser(user.id)) {
+            try {
+                const localData = localStorage.getItem(`cv_data_${user.id}`);
+                if (localData) {
+                    console.log('[useCV] Dev Mode: Loaded CV from LocalStorage');
+                    setCV(JSON.parse(localData));
+                    setLoading(false);
+                    return; // Stop here, do not call API
+                }
+            } catch (e) {
+                console.error('[useCV] Failed to load local CV:', e);
+            }
+        }
 
         try {
             const headers: HeadersInit = {};
@@ -103,11 +113,58 @@ export function useCV(): UseCVReturn {
         }
     }, [user]);
 
+    // Fetch CV on mount
+    useEffect(() => {
+        if (user) {
+            fetchCV();
+        } else {
+            setCV(null);
+            setLoading(false);
+        }
+    }, [user?.id, fetchCV]);
+
     const saveCV = useCallback(async (cvData: Partial<ComprehensiveCV>) => {
         if (!user) return;
 
         setSaving(true);
         setError(null);
+
+        // Optimistic update - set CV immediately so UI reflects changes
+        // even if the save fails (e.g. RLS issues in dev mode)
+        const optimisticCV = {
+            ...cv, // Keep existing fields if partial update
+            ...cvData,
+            user_id: user.id
+        } as ComprehensiveCV;
+
+        setCV(optimisticCV);
+
+        if (isDevUser(user.id)) {
+            console.warn('[useCV] Dev Mode: Saving to LocalStorage (Cloud Skipped)');
+            try {
+                // Simulate save delay
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Use the optimistic object as base to ensure we have the latest merged state
+                const finalCV = {
+                    ...optimisticCV,
+                    updated_at: new Date().toISOString(),
+                    created_at: cv?.created_at || new Date().toISOString(),
+                } as ComprehensiveCV;
+
+                // Update local state with timestamps
+                setCV(finalCV);
+
+                localStorage.setItem(`cv_data_${user.id}`, JSON.stringify(finalCV));
+                window.dispatchEvent(new Event('storage'));
+                console.log('[useCV] Dev Mode: Saved to LocalStorage successfully.');
+            } catch (e) {
+                console.error('Local storage save failed', e);
+            }
+
+            setSaving(false);
+            return;
+        }
 
         try {
             const headers: HeadersInit = {
@@ -129,21 +186,44 @@ export function useCV(): UseCVReturn {
                 throw new Error(data.error);
             }
 
+            // If success, update with server response (which might have generated IDs etc)
             setCV(data.cv);
 
         } catch (err: any) {
             setError(err.message);
+            // We usually re-throw to let the caller handle UI feedback
             throw err;
         } finally {
             setSaving(false);
         }
-    }, [user]);
+    }, [user, cv]);
 
     const updateCV = useCallback(async (updates: Partial<ComprehensiveCV>) => {
         if (!user) return;
 
         setSaving(true);
         setError(null);
+
+        // DEV MODE: Local Storage Persistence
+        if (isDevUser(user.id)) {
+            try {
+                const updatedCV = {
+                    ...(cv || {}),
+                    ...updates,
+                    updated_at: new Date().toISOString()
+                } as ComprehensiveCV;
+
+                setCV(updatedCV);
+                localStorage.setItem(`cv_data_${user.id}`, JSON.stringify(updatedCV));
+                window.dispatchEvent(new Event('storage'));
+                console.log('[useCV] Dev Mode: Updated CV in LocalStorage');
+            } catch (e) {
+                console.error('[useCV] Failed to update local CV:', e);
+            } finally {
+                setSaving(false);
+            }
+            return;
+        }
 
         try {
             const headers: HeadersInit = {
@@ -173,13 +253,43 @@ export function useCV(): UseCVReturn {
         } finally {
             setSaving(false);
         }
-    }, [user]);
+    }, [user, cv]);
 
     const updateField = useCallback(async (fieldPath: string, value: any) => {
         if (!user) return;
 
         setSaving(true);
         setError(null);
+
+        // DEV MODE: Local Storage Persistence for Field Updates
+        if (isDevUser(user.id)) {
+            try {
+                if (!cv) throw new Error("No CV found to update");
+                const newCV = JSON.parse(JSON.stringify(cv)); // Deep clone
+
+                // Simple dot-notation setter
+                const keys = fieldPath.split('.');
+                let current = newCV;
+                for (let i = 0; i < keys.length - 1; i++) {
+                    if (!current[keys[i]]) current[keys[i]] = {};
+                    current = current[keys[i]];
+                }
+                current[keys[keys.length - 1]] = value;
+
+                newCV.updated_at = new Date().toISOString();
+
+                setCV(newCV);
+                localStorage.setItem(`cv_data_${user.id}`, JSON.stringify(newCV));
+                window.dispatchEvent(new Event('storage'));
+                console.log(`[useCV] Dev Mode: Updated field ${fieldPath} in LocalStorage`);
+            } catch (e: any) {
+                console.error('[useCV] Failed to update local field:', e);
+                setError(e.message);
+            } finally {
+                setSaving(false);
+            }
+            return;
+        }
 
         try {
             const headers: HeadersInit = {
@@ -209,13 +319,28 @@ export function useCV(): UseCVReturn {
         } finally {
             setSaving(false);
         }
-    }, [user]);
+    }, [user, cv]);
 
     const deleteCV = useCallback(async () => {
         if (!user) return;
 
         setSaving(true);
         setError(null);
+
+        // DEV MODE: Delete from Local Storage
+        if (isDevUser(user.id)) {
+            try {
+                localStorage.removeItem(`cv_data_${user.id}`);
+                setCV(null);
+                window.dispatchEvent(new Event('storage'));
+                console.log('[useCV] Dev Mode: Deleted CV from LocalStorage');
+            } catch (e) {
+                console.error('[useCV] Failed to delete local CV:', e);
+            } finally {
+                setSaving(false);
+            }
+            return;
+        }
 
         try {
             const headers: HeadersInit = {};
@@ -251,6 +376,8 @@ export function useCV(): UseCVReturn {
     ): Promise<CVExtractionResult> => {
         if (!user) throw new Error('Not authenticated');
 
+        console.log('[useCV] extractFromFile called', { provider, model, isDev: isDevUser(user.id) });
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('provider', provider);
@@ -259,6 +386,19 @@ export function useCV(): UseCVReturn {
         const headers: HeadersInit = {};
         if (isDevUser(user.id)) {
             headers['x-user-id'] = user.id;
+            const storedKeys = localStorage.getItem('ai_api_keys_dev');
+            if (storedKeys) {
+                try {
+                    const keys = JSON.parse(storedKeys);
+                    const keyForProvider = keys.find((k: any) => k.provider_name === provider);
+                    if (keyForProvider?.api_key) {
+                        formData.append('devApiKey', keyForProvider.api_key);
+                        console.log('[useCV] Dev Mode: Added API key from localStorage for', provider);
+                    }
+                } catch (e) {
+                    console.error('[useCV] Failed to parse stored API keys:', e);
+                }
+            }
         }
 
         const res = await fetch('/api/cv/extract', {
@@ -270,7 +410,7 @@ export function useCV(): UseCVReturn {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.extractionNotes || 'Extraction failed');
+            throw new Error(result.extractionNotes || result.error || 'Extraction failed');
         }
 
         return result;
@@ -283,15 +423,29 @@ export function useCV(): UseCVReturn {
     ): Promise<CVExtractionResult> => {
         if (!user) throw new Error('Not authenticated');
 
+        console.log('[useCV] extractFromText called', { provider, model, textLength: text.length, isDev: isDevUser(user.id) });
+
         const formData = new FormData();
         formData.append('rawText', text);
         formData.append('provider', provider);
         formData.append('model', model);
 
-        // Do not set Content-Type header when using FormData, let the browser do it with the boundary
         const headers: HeadersInit = {};
         if (isDevUser(user.id)) {
             headers['x-user-id'] = user.id;
+            const storedKeys = localStorage.getItem('ai_api_keys_dev');
+            if (storedKeys) {
+                try {
+                    const keys = JSON.parse(storedKeys);
+                    const keyForProvider = keys.find((k: any) => k.provider_name === provider);
+                    if (keyForProvider?.api_key) {
+                        formData.append('devApiKey', keyForProvider.api_key);
+                        console.log('[useCV] Dev Mode: Added API key from localStorage for', provider);
+                    }
+                } catch (e) {
+                    console.error('[useCV] Failed to parse stored API keys:', e);
+                }
+            }
         }
 
         const res = await fetch('/api/cv/extract', {
@@ -314,11 +468,27 @@ export function useCV(): UseCVReturn {
     }, [user]);
 
     const refineCV = useCallback(async (
-        instructions?: string,
-        provider?: AIProviderName,
-        model?: string
+        params: {
+            resolvedGaps?: { gapId: string; userInput: string }[];
+            selectedDomains?: string[];
+            instructions?: string;
+            additionalText?: string;
+            cvLanguage?: string;
+            provider?: AIProviderName;
+            model?: string;
+        }
     ): Promise<CVExtractionResult> => {
         if (!user || !cv) throw new Error('Not authenticated or no CV to refine');
+
+        const {
+            resolvedGaps,
+            selectedDomains,
+            instructions,
+            additionalText,
+            cvLanguage,
+            provider,
+            model
+        } = params;
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json'
@@ -331,8 +501,12 @@ export function useCV(): UseCVReturn {
             method: 'POST',
             headers,
             body: JSON.stringify({
-                cv,
+                currentCV: cv, // Using currentCV as per API requirement
+                resolvedGaps,
+                selectedDomains,
                 instructions,
+                additionalText,
+                cvLanguage,
                 provider,
                 model
             })
@@ -341,7 +515,7 @@ export function useCV(): UseCVReturn {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.extractionNotes || 'Refinement failed');
+            throw new Error(result.error || result.extractionNotes || 'Refinement failed');
         }
 
         return result;

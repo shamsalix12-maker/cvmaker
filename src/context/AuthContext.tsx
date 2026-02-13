@@ -49,9 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.user) {
+                    console.log('[AuthContext] Found Supabase session, user:', session.user.id);
                     setUser(mapSupabaseUser(session.user));
-                    localStorage.removeItem('cv_tailor_dev_user'); // Clean up dev user if real user exists
+                    // Clean up dev user data if real user exists
+                    localStorage.removeItem('cv_tailor_dev_user');
+                    localStorage.removeItem('ai_api_keys_dev');
+                    localStorage.removeItem('cv_data_d0000000-d000-d000-d000-');
+                    console.log('[AuthContext] Cleaned up dev user data');
                 } else {
+                    console.log('[AuthContext] No Supabase session, checking for dev user');
                     const storedDevUser = localStorage.getItem('cv_tailor_dev_user');
                     if (storedDevUser) {
                         try {
@@ -61,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 localStorage.removeItem('cv_tailor_dev_user');
                                 setUser(null);
                             } else {
+                                console.log('[AuthContext] Using dev user:', parsed.id);
                                 setUser(parsed);
                             }
                         } catch (e) {
@@ -82,8 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // 2. Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            console.log('[AuthContext] Auth state changed:', _event, session?.user?.id);
             if (session?.user) {
                 setUser(mapSupabaseUser(session.user));
+                // Clean up dev user data when real user signs in
+                localStorage.removeItem('cv_tailor_dev_user');
+                localStorage.removeItem('ai_api_keys_dev');
             } else {
                 setUser(null);
             }

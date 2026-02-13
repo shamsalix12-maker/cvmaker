@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles, Plus, RefreshCw
+    FileText, Upload, AlertCircle, Loader2, FileUp,
+    Clipboard, Brain, Sparkles, Plus, RefreshCw
 } from 'lucide-react';
-import { useCV } from '@/hooks/useCV';
 import { useAIKeys } from '@/hooks/useAIKeys';
-import { AIProviderName, CVExtractionResult, ComprehensiveCV, AIModel } from '@/lib/types';
+import { AIProviderName, CVExtractionResult, ComprehensiveCV } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -19,6 +21,17 @@ import { toast } from 'sonner';
 
 interface CVUploaderProps {
     onExtractionComplete: (result: CVExtractionResult) => void;
+    // ★ Receive extraction functions from parent — NO local useCV()
+    extractFromFile: (
+        file: File,
+        provider: AIProviderName,
+        model: string
+    ) => Promise<CVExtractionResult>;
+    extractFromText: (
+        text: string,
+        provider: AIProviderName,
+        model: string
+    ) => Promise<CVExtractionResult>;
     existingCV: ComprehensiveCV | null;
     disabled?: boolean;
     allowReupload?: boolean;
@@ -27,14 +40,21 @@ interface CVUploaderProps {
 
 export function CVUploader({
     onExtractionComplete,
+    extractFromFile,    // ★ from parent
+    extractFromText,    // ★ from parent
     existingCV,
     disabled = false,
     allowReupload = false,
-    onManualStart
+    onManualStart,
 }: CVUploaderProps) {
     const t = useTranslations('cv');
-    const { extractFromFile, extractFromText } = useCV();
-    const { getModelsForProvider, validProviders, fetchKeys, loading: keysLoading } = useAIKeys();
+    // ★ REMOVED: const { extractFromFile, extractFromText } = useCV();
+    const {
+        getModelsForProvider,
+        validProviders,
+        fetchKeys,
+        loading: keysLoading,
+    } = useAIKeys();
 
     const [activeTab, setActiveTab] = useState<'file' | 'text'>('file');
     const [file, setFile] = useState<File | null>(null);
@@ -43,26 +63,26 @@ export function CVUploader({
     const [isExtracting, setIsExtracting] = useState(false);
 
     // AI Settings State
-    // validProviders is now directly from the hook
     const [selectedProvider, setSelectedProvider] = useState<AIProviderName | ''>('');
     const [selectedModel, setSelectedModel] = useState<string>('');
 
-    // Derived available models
-    const availableModels = selectedProvider ? getModelsForProvider(selectedProvider as AIProviderName) : [];
+    const availableModels = selectedProvider
+        ? getModelsForProvider(selectedProvider as AIProviderName)
+        : [];
 
-    // Sync provider when validProviders change
+    // Fetch keys on mount
     useEffect(() => {
-        // Also trigger a re-fetch on mount to ensure we pick up changes from settings
         fetchKeys();
     }, [fetchKeys]);
 
+    // Auto-select first valid provider
     useEffect(() => {
         if (!selectedProvider && validProviders.length > 0) {
             setSelectedProvider(validProviders[0]);
         }
     }, [validProviders, selectedProvider]);
 
-    // Sync model when provider changes or models available
+    // Auto-select first model when provider changes
     useEffect(() => {
         if (selectedProvider) {
             const models = getModelsForProvider(selectedProvider as AIProviderName);
@@ -72,18 +92,13 @@ export function CVUploader({
         }
     }, [selectedProvider, getModelsForProvider, selectedModel]);
 
-    // Update model when provider changes
     const handleProviderChange = (provider: AIProviderName) => {
         setSelectedProvider(provider);
         const models = getModelsForProvider(provider);
-        if (models.length > 0) {
-            setSelectedModel(models[0].model_id);
-        } else {
-            setSelectedModel('');
-        }
+        setSelectedModel(models.length > 0 ? models[0].model_id : '');
     };
 
-    // Drag and drop handlers
+    // ─── Drag & Drop ───
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         if (!disabled) setIsDragActive(true);
@@ -97,12 +112,10 @@ export function CVUploader({
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragActive(false);
-
         if (disabled) return;
 
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const droppedFile = e.dataTransfer.files[0];
-            validateAndSetFile(droppedFile);
+            validateAndSetFile(e.dataTransfer.files[0]);
         }
     };
 
@@ -112,28 +125,30 @@ export function CVUploader({
         }
     };
 
-    const validateAndSetFile = (file: File) => {
+    const validateAndSetFile = (f: File) => {
         const validTypes = [
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'text/plain',
-            'text/markdown'
+            'text/markdown',
         ];
 
-        if (!validTypes.includes(file.type) && !file.name.endsWith('.md')) { // strict mime type check might fail for md
-            toast.error(t('errors.validation.invalid_file_type', { formats: '.pdf, .docx, .txt, .md' }));
+        if (!validTypes.includes(f.type) && !f.name.endsWith('.md')) {
+            toast.error(t('errors.validation.invalid_file_type', {
+                formats: '.pdf, .docx, .txt, .md',
+            }));
             return;
         }
 
-        // Size check (e.g. 5MB)
-        if (file.size > 5 * 1024 * 1024) {
+        if (f.size > 5 * 1024 * 1024) {
             toast.error(t('errors.validation.file_too_large', { size: 5 }));
             return;
         }
 
-        setFile(file);
+        setFile(f);
     };
 
+    // ─── Extract ───
     const handleExtract = async () => {
         if (!selectedProvider || !selectedModel) {
             toast.error(t('select_ai_first'));
@@ -145,6 +160,14 @@ export function CVUploader({
         try {
             let result: CVExtractionResult;
 
+            console.log('[CVUploader] Starting extraction...', {
+                activeTab,
+                hasFile: !!file,
+                hasText: !!text.trim(),
+                provider: selectedProvider,
+                model: selectedModel
+            });
+
             if (activeTab === 'file' && file) {
                 result = await extractFromFile(file, selectedProvider, selectedModel);
             } else if (activeTab === 'text' && text.trim()) {
@@ -155,17 +178,21 @@ export function CVUploader({
                 return;
             }
 
-            onExtractionComplete(result);
+            console.log('[CVUploader] Extraction result:', {
+                success: result.success,
+                name: result.cv?.personal_info?.full_name,
+                confidence: result.confidence,
+                cv: result.cv
+            });
 
+            onExtractionComplete(result);
         } catch (err: any) {
+            console.error('[CVUploader] Extraction error:', err);
             toast.error(err.message || t('extraction_failed'));
         } finally {
             setIsExtracting(false);
         }
     };
-
-    // If CV exists and reupload not requested, show concise state or nothing
-    // But usually this component is mounted when user WANTS to upload (e.g. in Upload tab)
 
     return (
         <Card className="w-full max-w-2xl mx-auto">
@@ -174,13 +201,10 @@ export function CVUploader({
                     <FileUp className="h-5 w-5" />
                     {t('upload_cv')}
                 </CardTitle>
-                <CardDescription>
-                    {t('upload_description')}
-                </CardDescription>
+                <CardDescription>{t('upload_description')}</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
-
                 {/* AI Selection */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
                     <div className="space-y-2">
@@ -197,13 +221,20 @@ export function CVUploader({
                                 disabled={keysLoading || isExtracting}
                                 title={t('refresh_keys')}
                             >
-                                <RefreshCw className={cn("h-3 w-3", keysLoading && "animate-spin")} />
+                                <RefreshCw className={cn(
+                                    "h-3 w-3",
+                                    keysLoading && "animate-spin"
+                                )} />
                             </Button>
                         </div>
                         <Select
                             value={selectedProvider || ""}
-                            onValueChange={(val) => handleProviderChange(val as AIProviderName)}
-                            disabled={isExtracting || disabled || validProviders.length === 0}
+                            onValueChange={(val) =>
+                                handleProviderChange(val as AIProviderName)
+                            }
+                            disabled={
+                                isExtracting || disabled || validProviders.length === 0
+                            }
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder={t('select_provider')} />
@@ -213,7 +244,9 @@ export function CVUploader({
                                     <SelectItem key={p} value={p}>{p}</SelectItem>
                                 ))}
                                 {validProviders.length === 0 && (
-                                    <SelectItem value="none" disabled>{t('no_providers')}</SelectItem>
+                                    <SelectItem value="none" disabled>
+                                        {t('no_providers')}
+                                    </SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
@@ -236,37 +269,33 @@ export function CVUploader({
                                 {availableModels
                                     .filter(m => m.model_id && m.model_id.trim() !== '')
                                     .map(m => (
-                                        <SelectItem key={m.model_id} value={m.model_id}>{m.model_name}</SelectItem>
+                                        <SelectItem key={m.model_id} value={m.model_id}>
+                                            {m.model_name}
+                                        </SelectItem>
                                     ))}
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
 
-                {!keysLoading && validProviders.length === 0 && (
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg">
-                        <div className="flex items-center gap-3 text-sm text-amber-700 dark:text-amber-400">
-                            <AlertCircle className="h-5 w-5 shrink-0" />
-                            <p>{t('no_keys_alert')}</p>
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0 border-amber-300 hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-900/30"
-                            asChild
-                        >
-                            <a href="/settings">{t('configure_keys')}</a>
-                        </Button>
-                    </div>
-                )}
-
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'file' | 'text')} className="w-full">
+                {/* File / Text Tabs */}
+                <Tabs
+                    value={activeTab}
+                    onValueChange={(v) => setActiveTab(v as 'file' | 'text')}
+                    className="w-full"
+                >
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="file" disabled={isExtracting || disabled}>
+                        <TabsTrigger
+                            value="file"
+                            disabled={isExtracting || disabled}
+                        >
                             <Upload className="h-4 w-4 mr-2" />
                             {t('file_upload')}
                         </TabsTrigger>
-                        <TabsTrigger value="text" disabled={isExtracting || disabled}>
+                        <TabsTrigger
+                            value="text"
+                            disabled={isExtracting || disabled}
+                        >
                             <Clipboard className="h-4 w-4 mr-2" />
                             {t('paste_text')}
                         </TabsTrigger>
@@ -276,14 +305,19 @@ export function CVUploader({
                         <div
                             className={cn(
                                 "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-                                isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+                                isDragActive
+                                    ? "border-primary bg-primary/5"
+                                    : "border-muted-foreground/25 hover:border-primary/50",
                                 disabled && "opacity-50 cursor-not-allowed",
                                 file && "border-green-500 bg-green-50 dark:bg-green-950/20"
                             )}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
-                            onClick={() => !disabled && document.getElementById('file-upload')?.click()}
+                            onClick={() =>
+                                !disabled &&
+                                document.getElementById('file-upload')?.click()
+                            }
                         >
                             <input
                                 id="file-upload"
@@ -325,7 +359,8 @@ export function CVUploader({
                                             {t('upload_drag_drop')}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('supported_formats')} {t('max_size', { size: 5 })}
+                                            {t('supported_formats')}{' '}
+                                            {t('max_size', { size: 5 })}
                                         </p>
                                     </>
                                 )}
@@ -344,6 +379,7 @@ export function CVUploader({
                     </TabsContent>
                 </Tabs>
 
+                {/* Extract Button */}
                 <Button
                     className="w-full"
                     onClick={handleExtract}
@@ -357,18 +393,19 @@ export function CVUploader({
                     }
                 >
                     {isExtracting ? (
-                        <span className="flex items-center justify-center pointer-events-none" key="extracting">
+                        <span className="flex items-center justify-center pointer-events-none">
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             {t('extracting_info')}
                         </span>
                     ) : (
-                        <span className="flex items-center justify-center pointer-events-none" key="idle">
+                        <span className="flex items-center justify-center pointer-events-none">
                             <Brain className="h-4 w-4 mr-2" />
                             {t('extract_data')}
                         </span>
                     )}
                 </Button>
 
+                {/* Divider */}
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
@@ -380,6 +417,7 @@ export function CVUploader({
                     </div>
                 </div>
 
+                {/* Manual Entry Button */}
                 <Button
                     variant="outline"
                     className="w-full"
@@ -390,6 +428,7 @@ export function CVUploader({
                     {t('enter_manually')}
                 </Button>
 
+                {/* Replace Warning */}
                 {existingCV && (
                     <div className="flex items-center justify-center gap-2 text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
                         <AlertCircle className="h-4 w-4" />

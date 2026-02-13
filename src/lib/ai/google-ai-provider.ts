@@ -19,6 +19,14 @@ export class GoogleAIProvider extends BaseAIProvider {
     }
 
     async validateKey(apiKey: string): Promise<AIValidationResult> {
+        // MOCK CHECK
+        if (apiKey === 'TEST_KEY_MOCK') {
+            return {
+                valid: true,
+                models: this.KNOWN_MODELS
+            };
+        }
+
         try {
             const client = this.createClient(apiKey);
             // Use gemini-2.5-flash for validation
@@ -45,27 +53,109 @@ export class GoogleAIProvider extends BaseAIProvider {
     }
 
     async complete(config: AIProviderConfig, options: AICompletionOptions): Promise<string> {
-        const client = this.createClient(config.apiKey);
-        const model = client.getGenerativeModel({
+        console.log('[GoogleAI] complete() called', {
             model: options.model,
-            systemInstruction: options.messages.find(m => m.role === 'system')?.content,
+            hasApiKey: !!config.apiKey,
+            apiKeyPrefix: config.apiKey?.substring(0, 10) + '...',
+            jsonMode: options.jsonMode,
+            messageCount: options.messages?.length
         });
 
-        const userMessages = options.messages.filter(m => m.role !== 'system');
+        if (config.apiKey === 'TEST_KEY_MOCK') {
+            console.log('[GoogleAI] Using MOCK response for testing');
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const result = await model.generateContent({
-            contents: userMessages.map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            })),
-            generationConfig: {
-                temperature: options.temperature ?? config.temperature ?? 0.1,
-                maxOutputTokens: options.maxTokens ?? config.maxTokens ?? 4096,
-                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
+            return JSON.stringify({
+                personal_info: {
+                    full_name: "Karim Shamsasenjan",
+                    email: "k.sh.asenajn@gmail.com",
+                    phone: "+636506660575",
+                    location: "6/2 Machstarsse 8-10 1020 Vienna",
+                    linkedin_url: "https://www.linkedin.com/in/karim-shamsasenjan-5256406/",
+                    summary: "Associated Professor in Biochemistry and Clinical Laboratory with extensive experience in blood transfusion, stem cell biology, and quality management."
+                },
+                work_experience: [
+                    {
+                        job_title: "Head of Biochemistry and clinical laboratory Dep.",
+                        company: "Tabriz University of Medical Science",
+                        start_date: "2022",
+                        is_current: true,
+                        description: "Leading the department and overseeing clinical laboratory operations."
+                    }
+                ],
+                education: [
+                    {
+                        degree: "Ph.D. Bio-Signal Analysis",
+                        institution: "Yamaguchi University, Japan",
+                        end_date: "2009-03",
+                        field_of_study: "Bio-Signal Analysis"
+                    }
+                ],
+                skills: ["Transfusion Medicine", "Stem Cell Biology", "GMP", "Clinical Laboratory", "Quality Assurance"],
+                confidence: 95,
+                notes: "Mock extraction successful."
+            });
+        }
+
+        try {
+            const client = this.createClient(config.apiKey);
+            const systemInstruction = options.messages.find(m => m.role === 'system')?.content;
+            const model = client.getGenerativeModel({
+                model: options.model,
+                systemInstruction,
+            });
+
+            console.log('[GoogleAI] Model created, system instruction length:', systemInstruction?.length || 0);
+
+            const userMessages = options.messages.filter(m => m.role !== 'system');
+            console.log('[GoogleAI] User messages count:', userMessages.length);
+
+            // HARDCODED: 65536 for Gemini Flash to ensure no truncation
+            const maxTokens = 65536;
+            console.log('[GoogleAI] maxTokens set to:', maxTokens);
+
+            const safetySettings = [
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            ];
+
+            const result = await model.generateContent({
+                contents: userMessages.map(m => ({
+                    role: m.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: m.content }]
+                })),
+                generationConfig: {
+                    temperature: options.temperature ?? config.temperature ?? 0.1,
+                    maxOutputTokens: maxTokens,
+                    responseMimeType: options.jsonMode ? "application/json" : "text/plain",
+                },
+                safetySettings: safetySettings as any,
+            });
+
+            const responseText = result.response.text();
+            const finishReason = result.response.candidates?.[0]?.finishReason;
+
+            console.log('[GoogleAI] Response received:', {
+                length: responseText.length,
+                finishReason,
+                promptTokens: result.response.usageMetadata?.promptTokenCount,
+                completionTokens: result.response.usageMetadata?.candidatesTokenCount
+            });
+
+            if (finishReason && finishReason !== 'STOP') {
+                console.warn('[GoogleAI] Non-STOP finish reason:', finishReason);
+                console.warn('[GoogleAI] Response may be incomplete!');
             }
-        });
 
-        return result.response.text();
+            console.log('[GoogleAI] Response preview:', responseText.substring(0, 300));
+
+            return responseText;
+        } catch (error: any) {
+            console.error('[GoogleAI] Error in complete():', error);
+            throw error;
+        }
     }
 
     async streamComplete(

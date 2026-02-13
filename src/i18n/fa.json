@@ -93,6 +93,8 @@
         "cv_deleted": "سی‌وی شما حذف شد.",
         "delete_error": "حذف ناموفق بود",
         "completion": "{percent}% تکمیل",
+        "last_updated": "آخرین به‌روزرسانی: {date}",
+        "edit": "ویرایش",
         "save_cv": "ذخیره سی‌وی",
         "saving": "در حال ذخیره...",
         "delete_cv": "حذف سی‌وی",
@@ -108,7 +110,8 @@
         "analyzing": "در حال تحلیل...",
         "extraction_started": "فرآیند استخراج اطلاعات آغاز شد",
         "extraction_failed_manual_fallback": "تحلیل هوشمند ناموفق بود، اما متن خام ذخیره شد.",
-        "save_success_ai_failed": "اطلاعات با موفقیت ذخیره شد اما تحلیل هوشمند با خطا مواجه شد."
+        "save_success_ai_failed": "اطلاعات با موفقیت ذخیره شد اما تحلیل هوشمند با خطا مواجه شد.",
+        "saved_local_only": "ذخیره ابری در حالت توسعه در دسترس نیست. داده‌ها در حافظه نگه داشته می‌شوند."
     },
     "dashboard": {
         "title": "داشبورد",
@@ -203,6 +206,9 @@
         "section_content": "محتوای بخش",
         "incomplete_fields": "فیلدهای ناقص",
         "please_complete": "لطفاً فیلدهای زیر را برای نتیجه بهتر تکمیل کنید",
+        "completion": "تکمیل: {percent}%",
+        "last_updated": "آخرین به‌روزرسانی: {date}",
+        "edit": "ویرایش",
         "field_complete": "کامل",
         "field_incomplete": "ناقص",
         "field_optional": "اختیاری",

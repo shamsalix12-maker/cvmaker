@@ -1,0 +1,2277 @@
+// ═══════════════════════════════════════════════════════════════
+// [F079] src/lib/types.ts
+// Central TypeScript Type Definitions
+// ALL types for the entire application are defined here
+// ═══════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────
+// USER TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export interface User {
+    id: string;
+    google_id: string | null;
+    email: string;
+    name: string;
+    avatar_url: string | null;
+    preferred_language: AppLocale;
+    created_at: string;
+    updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// CV TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export interface PersonalInfo {
+    full_name: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin_url: string;
+    website_url: string;
+    summary: string;
+}
+
+export interface WorkExperience {
+    id: string;
+    job_title: string;
+    company: string;
+    location: string;
+    start_date: string;
+    end_date: string | null;
+    is_current: boolean;
+    description: string;
+    achievements: string[];
+}
+
+export interface Education {
+    id: string;
+    degree: string;
+    field_of_study: string;
+    institution: string;
+    location: string;
+    start_date: string;
+    end_date: string;
+    gpa: string | null;
+    description: string;
+}
+
+export interface Certification {
+    id: string;
+    name: string;
+    issuer: string;
+    date_obtained: string;
+    expiry_date: string | null;
+    credential_id: string | null;
+    credential_url: string | null;
+}
+
+export interface Language {
+    language: string;
+    proficiency: 'native' | 'fluent' | 'advanced' | 'intermediate' | 'beginner';
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    description: string;
+    technologies: string[];
+    url: string | null;
+    start_date: string | null;
+    end_date: string | null;
+}
+
+export interface AdditionalSection {
+    id: string;
+    title: string;
+    content: string;
+}
+
+export interface ComprehensiveCV {
+    id: string;
+    user_id: string;
+    personal_info: PersonalInfo;
+    work_experience: WorkExperience[];
+    education: Education[];
+    skills: string[];
+    certifications: Certification[];
+    languages: Language[];
+    projects: Project[];
+    additional_sections: AdditionalSection[];
+    raw_text: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CVFieldStatus {
+    field_path: string;
+    field_name: string;
+    is_complete: boolean;
+    is_required: boolean;
+    current_value: unknown;
+    message?: string;
+}
+
+export type CVSection =
+    | 'personal_info'
+    | 'work_experience'
+    | 'education'
+    | 'skills'
+    | 'certifications'
+    | 'languages'
+    | 'projects'
+    | 'additional_sections';
+
+// ─────────────────────────────────────────────────────────────────
+// PROMPT TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export interface Prompt {
+    id: string;
+    title_en: string;
+    title_fa: string;
+    description_en: string;
+    description_fa: string;
+    prompt_text: string;
+    category: string;
+    is_active: boolean;
+    sort_order: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PromptCategory {
+    id: string;
+    name_en: string;
+    name_fa: string;
+    sort_order: number;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AI TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export type AIProviderName = 'openai' | 'anthropic' | 'google';
+
+export interface AIModel {
+    model_id: string;
+    model_name: string;
+    provider: AIProviderName;
+    context_window?: number;
+    supports_streaming: boolean;
+}
+
+export interface AIApiKey {
+    id: string;
+    user_id: string;
+    provider_name: AIProviderName;
+    api_key_encrypted: string;
+    is_valid: boolean;
+    available_models: AIModel[];
+    token_balance: string | null;
+    last_validated_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AISelection {
+    provider: AIProviderName;
+    model_id: string;
+    role: 'draft' | 'final';
+}
+
+export interface AIChatMessage {
+    id: string;
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+}
+
+export interface AIConnectionStatus {
+    provider: AIProviderName;
+    is_connected: boolean;
+    error_message?: string;
+    available_models: AIModel[];
+    token_balance?: string;
+    last_checked: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// APPLICATION TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export type OutputLanguage = 'en' | 'fa' | 'fr' | 'de' | 'es' | 'ar' | 'zh' | 'tr';
+
+export type ToneMode = 'preset' | 'custom';
+
+export type TonePreset =
+    | 'formal'
+    | 'semi-formal'
+    | 'professional'
+    | 'friendly'
+    | 'creative'
+    | 'confident';
+
+export interface ToneSetting {
+    mode: ToneMode;
+    preset_value: TonePreset | null;
+    custom_text: string | null;
+}
+
+export type ApplicationStatus =
+    | 'input'
+    | 'processing'
+    | 'clarification'
+    | 'draft_ready'
+    | 'editing'
+    | 'finalized';
+
+export interface DraftOutput {
+    id: string;
+    ai_provider: AIProviderName;
+    ai_model: string;
+    content: string;
+    created_at: string;
+}
+
+export interface FinalOutput {
+    tailored_cv: string;
+    cover_letter: string;
+    application_email: string;
+}
+
+export interface JobApplication {
+    id: string;
+    user_id: string;
+    job_title: string;
+    company_name: string;
+    job_description: string;
+    selected_prompt_ids: string[];
+    ai_selections: AISelection[];
+    output_language: OutputLanguage;
+    tone_setting: ToneSetting;
+    selected_template_ids: {
+        cv: string | null;
+        cover_letter: string | null;
+        email: string | null;
+    };
+    conversation_history: AIChatMessage[];
+    draft_outputs: DraftOutput[];
+    final_output: FinalOutput | null;
+    edited_output: FinalOutput | null;
+    status: ApplicationStatus;
+    created_at: string;
+    updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TEMPLATE TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export type TemplateType = 'cv' | 'cover_letter' | 'email';
+export type DocumentType = TemplateType;
+export type FileFormat = 'docx' | 'md';
+
+export interface Template {
+    id: string;
+    user_id: string;
+    template_name: string;
+    template_type: TemplateType;
+    file_format: FileFormat;
+    file_content: string;
+    preview_url?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// UI / APP TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export type AppLocale = 'en' | 'fa';
+
+export interface NavigationItem {
+    id: string;
+    label_key: string;
+    href: string;
+    icon: string;
+    badge?: number;
+}
+
+export interface BreadcrumbItem {
+    label_key: string;
+    href?: string;
+}
+
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface ToastMessage {
+    id: string;
+    type: ToastType;
+    title: string;
+    description?: string;
+    duration?: number;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// API RESPONSE TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: {
+        code: string;
+        message: string;
+        details?: unknown;
+    };
+}
+
+export interface PaginatedResponse<T> {
+    items: T[];
+    total: number;
+    page: number;
+    page_size: number;
+    has_more: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FORM TYPES
+// ─────────────────────────────────────────────────────────────────
+
+export interface FormFieldError {
+    field: string;
+    message: string;
+}
+
+export interface FormState<T> {
+    data: T;
+    errors: FormFieldError[];
+    isSubmitting: boolean;
+    isValid: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// CV Extraction Types
+// ─────────────────────────────────────────────────────────────────
+
+export interface CVExtractionResult {
+    success: boolean;
+    cv: Partial<ComprehensiveCV>;
+    fieldStatuses: CVFieldStatus[];
+    confidence: number; // 0-100
+    rawText: string;
+    aiProvider: AIProviderName;
+    aiModel: string;
+    extractionNotes?: string;
+}
+
+export interface CVExtractionRequest {
+    rawText: string;
+    aiProvider: AIProviderName;
+    aiModel: string;
+    language?: 'en' | 'fa' | 'auto';
+}
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import {
+    ComprehensiveCV,
+    CVFieldStatus,
+    CVExtractionResult,
+    AIProviderName
+} from '@/lib/types';
+import { validateExtractedCV, getCompletionPercentage } from '@/lib/cv/cv-validator';
+import { isDevUser } from '@/lib/auth/dev-auth';
+
+interface UseCVReturn {
+    cv: ComprehensiveCV | null;
+    loading: boolean;
+    saving: boolean;
+    error: string | null;
+    fieldStatuses: CVFieldStatus[];
+    completionPercentage: number;
+
+    // Actions
+    fetchCV: () => Promise<void>;
+    saveCV: (cvData: Partial<ComprehensiveCV>) => Promise<void>;
+    updateCV: (updates: Partial<ComprehensiveCV>) => Promise<void>;
+    updateField: (fieldPath: string, value: any) => Promise<void>;
+    deleteCV: () => Promise<void>;
+
+    // AI Extraction/Refinement
+    extractFromFile: (
+        file: File,
+        provider: AIProviderName,
+        model: string
+    ) => Promise<CVExtractionResult>;
+
+    extractFromText: (
+        text: string,
+        provider: AIProviderName,
+        model: string
+    ) => Promise<CVExtractionResult>;
+
+    refineCV: (
+        instructions?: string,
+        provider?: AIProviderName,
+        model?: string
+    ) => Promise<CVExtractionResult>;
+
+    applyExtraction: (result: CVExtractionResult) => Promise<void>;
+}
+
+export function useCV(): UseCVReturn {
+    const { user } = useAuth();
+
+    const [cv, setCV] = useState<ComprehensiveCV | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Derived state
+    const fieldStatuses = cv ? validateExtractedCV(cv) : [];
+    const completionPercentage = getCompletionPercentage(fieldStatuses);
+
+    // Fetch CV on mount
+    useEffect(() => {
+        if (user) {
+            fetchCV();
+        } else {
+            setCV(null);
+            setLoading(false);
+        }
+    }, [user?.id]);
+
+    const fetchCV = useCallback(async () => {
+        if (!user) return;
+
+        setLoading(true);
+        setError(null);
+
+        // DEV MODE: First check Local Storage to prevent overwrite
+        if (isDevUser(user.id)) {
+            try {
+                const localData = localStorage.getItem(`cv_data_${user.id}`);
+                if (localData) {
+                    console.log('[useCV] Dev Mode: Loaded CV from LocalStorage');
+                    setCV(JSON.parse(localData));
+                    setLoading(false);
+                    return; // Stop here, do not call API
+                }
+            } catch (e) {
+                console.error('[useCV] Failed to load local CV:', e);
+            }
+        }
+
+        try {
+            const headers: HeadersInit = {};
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const res = await fetch('/api/cv', {
+                headers
+            });
+
+            const data = await res.json();
+
+            if (data.error && data.error !== 'Unauthorized') {
+                throw new Error(data.error);
+            }
+
+            setCV(data.cv || null);
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message);
+            setCV(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
+    const saveCV = useCallback(async (cvData: Partial<ComprehensiveCV>) => {
+        if (!user) return;
+
+        setSaving(true);
+        setError(null);
+
+        // Optimistic update - set CV immediately so UI reflects changes
+        // even if the save fails (e.g. RLS issues in dev mode)
+        const optimisticCV = {
+            ...cv, // Keep existing fields if partial update
+            ...cvData,
+            user_id: user.id
+        } as ComprehensiveCV;
+
+        setCV(optimisticCV);
+
+        if (isDevUser(user.id)) {
+            console.warn('[useCV] Dev Mode: Saving to LocalStorage (Cloud Skipped)');
+            try {
+                // Simulate save delay
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Use the UP-TO-DATE object we just created
+                const finalCV = {
+                    ...(cv || {}),
+                    ...cvData,
+                    user_id: user.id,
+                    updated_at: new Date().toISOString(),
+                    created_at: cv?.created_at || new Date().toISOString(),
+                } as ComprehensiveCV;
+
+                // Update local state with timestamps
+                setCV(finalCV);
+
+                localStorage.setItem(`cv_data_${user.id}`, JSON.stringify(finalCV));
+                window.dispatchEvent(new Event('storage'));
+                console.log('[useCV] Dev Mode: Saved to LocalStorage successfully.');
+            } catch (e) {
+                console.error('Local storage save failed', e);
+            }
+
+            setSaving(false);
+            return;
+        }
+
+        try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const res = await fetch('/api/cv', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ cv: cvData })
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                // If it's just RLS policies blocking dev user, we keep the optimistic state
+                // but warn the user.
+                if (isDevUser(user.id)) {
+                    console.warn('[useCV] Save blocked by RLS (Dev Mode). State kept in memory.');
+                    // OPTIONAL: You could trigger a specific toast here if you had access to toast
+                    throw new Error(`Cloud save unavailable in Dev Mode (RLS). Data is local only.`);
+                }
+                throw new Error(data.error);
+            }
+
+            // If success, update with server response (which might have generated IDs etc)
+            setCV(data.cv);
+
+        } catch (err: any) {
+            setError(err.message);
+            // We usually re-throw to let the caller handle UI feedback
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, [user, cv]);
+
+    const updateCV = useCallback(async (updates: Partial<ComprehensiveCV>) => {
+        if (!user) return;
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const res = await fetch('/api/cv', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ updates })
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            setCV(data.cv);
+
+        } catch (err: any) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, [user]);
+
+    const updateField = useCallback(async (fieldPath: string, value: any) => {
+        if (!user) return;
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const res = await fetch('/api/cv', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ fieldPath, value })
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            setCV(data.cv);
+
+        } catch (err: any) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, [user]);
+
+    const deleteCV = useCallback(async () => {
+        if (!user) return;
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const headers: HeadersInit = {};
+            if (isDevUser(user.id)) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const res = await fetch('/api/cv', {
+                method: 'DELETE',
+                headers
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            setCV(null);
+
+        } catch (err: any) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, [user]);
+
+    const extractFromFile = useCallback(async (
+        file: File,
+        provider: AIProviderName,
+        model: string
+    ): Promise<CVExtractionResult> => {
+        if (!user) throw new Error('Not authenticated');
+
+        // CLIENT-SIDE MOCK FOR DEV MODE
+        // Bypasses server entirely to guarantee data visibility
+        if (isDevUser(user.id)) {
+            console.log('[useCV] Dev Mode: Using Client-Side Mock Extraction');
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate AI processing
+
+            const mockCV: ComprehensiveCV = {
+                id: 'mock-cv-id',
+                user_id: user.id,
+                personal_info: {
+                    full_name: "Karim Shamsasenjan",
+                    email: "k.sh.asenajn@gmail.com",
+                    phone: "+636506660575",
+                    location: "6/2 Machstarsse 8-10 1020 Vienna",
+                    linkedin_url: "https://www.linkedin.com/in/karim-shamsasenjan-5256406/",
+                    website_url: "",
+                    summary: "Associated Professor in Biochemistry and Clinical Laboratory with extensive experience in blood transfusion, stem cell biology, and quality management."
+                },
+                work_experience: [
+                    {
+                        id: 'exp-1',
+                        job_title: "Head of Biochemistry and clinical laboratory Dep.",
+                        company: "Tabriz University of Medical Science",
+                        start_date: "2022",
+                        end_date: "",
+                        is_current: true,
+                        description: "Leading the department and overseeing clinical laboratory operations.",
+                        achievements: []
+                    },
+                    {
+                        id: 'exp-2',
+                        job_title: "High Technical Counsellor",
+                        company: "Iranian National Blood Transfusion Organization",
+                        start_date: "2019",
+                        end_date: "",
+                        is_current: true,
+                        description: "Advising on technical strategies and new technologies.",
+                        achievements: []
+                    }
+                ],
+                education: [
+                    {
+                        id: 'edu-1',
+                        degree: "Ph.D. Bio-Signal Analysis",
+                        institution: "Yamaguchi University, Japan",
+                        field_of_study: "Bio-Signal Analysis",
+                        start_date: "",
+                        end_date: "2009-03",
+                        gpa: ""
+                    }
+                ],
+                skills: ["Transfusion Medicine", "Stem Cell Biology", "GMP", "Clinical Laboratory", "Quality Assurance"],
+                projects: [],
+                certifications: [],
+                languages: [],
+                additional_sections: [],
+                raw_text: "Mocked text content for testing."
+            };
+
+            const fieldStatuses = validateExtractedCV(mockCV);
+
+            return {
+                success: true,
+                cv: mockCV,
+                fieldStatuses,
+                confidence: 95,
+                rawText: "Mocked content",
+                aiProvider: provider,
+                aiModel: model,
+                extractionNotes: "Dev Mode: Used client-side mock data."
+            };
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('provider', provider);
+        formData.append('model', model);
+
+        const headers: HeadersInit = {};
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
+        const res = await fetch('/api/cv/extract', {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+            throw new Error(result.extractionNotes || 'Extraction failed');
+        }
+
+        return result;
+    }, [user]);
+
+    const extractFromText = useCallback(async (
+        text: string,
+        provider: AIProviderName,
+        model: string
+    ): Promise<CVExtractionResult> => {
+        if (!user) throw new Error('Not authenticated');
+
+        // CLIENT-SIDE MOCK FOR DEV MODE
+        if (isDevUser(user.id)) {
+            console.log('[useCV] Dev Mode: Using Client-Side Mock Extraction (Text)');
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            const mockCV: ComprehensiveCV = {
+                id: 'mock-cv-id',
+                user_id: user.id,
+                personal_info: {
+                    full_name: "Karim Shamsasenjan",
+                    email: "k.sh.asenajn@gmail.com",
+                    phone: "+636506660575",
+                    location: "6/2 Machstarsse 8-10 1020 Vienna",
+                    linkedin_url: "https://www.linkedin.com/in/karim-shamsasenjan-5256406/",
+                    website_url: "",
+                    summary: "Associated Professor in Biochemistry and Clinical Laboratory with extensive experience in blood transfusion, stem cell biology, and quality management."
+                },
+                work_experience: [
+                    {
+                        id: 'exp-1',
+                        job_title: "Head of Biochemistry and clinical laboratory Dep.",
+                        company: "Tabriz University of Medical Science",
+                        start_date: "2022",
+                        end_date: "",
+                        is_current: true,
+                        description: "Leading the department and overseeing clinical laboratory operations.",
+                        achievements: []
+                    },
+                    {
+                        id: 'exp-2',
+                        job_title: "High Technical Counsellor",
+                        company: "Iranian National Blood Transfusion Organization",
+                        start_date: "2019",
+                        end_date: "",
+                        is_current: true,
+                        description: "Advising on technical strategies and new technologies.",
+                        achievements: []
+                    }
+                ],
+                education: [
+                    {
+                        id: 'edu-1',
+                        degree: "Ph.D. Bio-Signal Analysis",
+                        institution: "Yamaguchi University, Japan",
+                        field_of_study: "Bio-Signal Analysis",
+                        start_date: "",
+                        end_date: "2009-03",
+                        gpa: ""
+                    }
+                ],
+                skills: ["Transfusion Medicine", "Stem Cell Biology", "GMP", "Clinical Laboratory", "Quality Assurance"],
+                projects: [],
+                certifications: [],
+                languages: [],
+                additional_sections: [],
+                raw_text: text
+            };
+
+            const fieldStatuses = validateExtractedCV(mockCV);
+
+            return {
+                success: true,
+                cv: mockCV,
+                fieldStatuses,
+                confidence: 95,
+                rawText: text,
+                aiProvider: provider,
+                aiModel: model,
+                extractionNotes: "Dev Mode: Used client-side mock data."
+            };
+        }
+
+        const formData = new FormData();
+        formData.append('rawText', text);
+        formData.append('provider', provider);
+        formData.append('model', model);
+
+        // Do not set Content-Type header when using FormData, let the browser do it with the boundary
+        const headers: HeadersInit = {};
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
+        const res = await fetch('/api/cv/extract', {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+            throw new Error(result.error || result.extractionNotes || 'Extraction failed');
+        }
+
+        if (!result.success) {
+            throw new Error(result.extractionNotes || 'AI extraction returned failure status');
+        }
+
+        return result;
+    }, [user]);
+
+    const refineCV = useCallback(async (
+        instructions?: string,
+        provider?: AIProviderName,
+        model?: string
+    ): Promise<CVExtractionResult> => {
+        if (!user || !cv) throw new Error('Not authenticated or no CV to refine');
+
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json'
+        };
+        if (isDevUser(user.id)) {
+            headers['x-user-id'] = user.id;
+        }
+
+        const res = await fetch('/api/cv/refine', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                cv,
+                instructions,
+                provider,
+                model
+            })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+            throw new Error(result.extractionNotes || 'Refinement failed');
+        }
+
+        return result;
+    }, [user, cv]);
+
+    const applyExtraction = useCallback(async (result: CVExtractionResult) => {
+        await saveCV(result.cv);
+    }, [saveCV]);
+
+    return {
+        cv,
+        loading,
+        saving,
+        error,
+        fieldStatuses,
+        completionPercentage,
+        fetchCV,
+        saveCV,
+        updateCV,
+        updateField,
+        deleteCV,
+        extractFromFile,
+        extractFromText,
+        refineCV,
+        applyExtraction,
+    };
+}
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { CVUploader } from '@/components/cv/CVUploader';
+import { CVFieldDisplay } from '@/components/cv/CVFieldDisplay';
+import { CVCompletionForm } from '@/components/cv/CVCompletionForm';
+import { CVPreview } from '@/components/cv/CVPreview';
+import { CVManagerTabs } from '@/components/cv/CVManagerTabs';
+import { useCV } from '@/hooks/useCV';
+import { CVSectionEditor } from '@/components/cv/CVSectionEditor';
+import { ManualEntryModal } from '@/components/cv/ManualEntryModal';
+import {
+    FileText, Save, Trash2, CheckCircle, AlertCircle, Loader2, Brain, Sparkles
+} from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { toast } from 'sonner';
+import { CVExtractionResult, ComprehensiveCV, CVSection } from '@/lib/types';
+
+type CVTab = 'upload' | 'fields' | 'preview';
+
+export default function CVManagerPage() {
+    const t = useTranslations('cv_manager');
+    const params = useParams();
+    const locale = params.locale as 'en' | 'fa';
+
+    const {
+        cv,
+        loading,
+        saving,
+        error,
+        fieldStatuses,
+        completionPercentage,
+        saveCV,
+        updateCV,
+        deleteCV,
+        applyExtraction,
+        refineCV,
+        extractFromFile,
+        extractFromText
+    } = useCV();
+
+    const [activeTab, setActiveTab] = useState<CVTab>('upload');
+    const [pendingExtraction, setPendingExtraction] = useState<CVExtractionResult | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+    const [refineInstructions, setRefineInstructions] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
+    const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+
+    // Editor State
+    const [editingSection, setEditingSection] = useState<CVSection | null>(null);
+
+    const [initialSwitchDone, setInitialSwitchDone] = useState(false);
+
+    // Initial switch to fields tab if CV exists and we haven't switched yet
+    useEffect(() => {
+        if (!loading && cv && !initialSwitchDone && activeTab === 'upload') {
+            setActiveTab('fields');
+            setInitialSwitchDone(true);
+        }
+    }, [cv, loading, initialSwitchDone, activeTab]);
+
+    // Handle refinement
+    const handleRefine = async () => {
+        if (!cv) return;
+
+        setIsRefining(true);
+        try {
+            const result = await refineCV(refineInstructions);
+
+            if (result.success) {
+                await applyExtraction(result);
+                setAiFeedback(result.extractionNotes || null);
+                setRefineInstructions('');
+
+                toast.success(t('refinement_success'), {
+                    description: t('refinement_success_desc'),
+                });
+            } else {
+                throw new Error(result.extractionNotes || 'Refinement failed');
+            }
+        } catch (err: any) {
+            toast.error(t('refinement_error'), {
+                description: err.message,
+            });
+        } finally {
+            setIsRefining(false);
+        }
+    };
+
+    // Handle extraction complete
+    const handleExtractionComplete = async (result: CVExtractionResult) => {
+        // Show immediate feedback
+        if (result.extractionNotes) {
+            setAiFeedback(result.extractionNotes);
+        }
+
+        if (!result.success) {
+            toast.error(t('extraction_error'), {
+                description: result.extractionNotes || 'AI failed to process the CV. Please try another model.',
+            });
+            return;
+        }
+
+        setPendingExtraction(result);
+        const tid = toast.loading(t('saving'), {
+            description: t('extraction_success_desc')
+        });
+
+        try {
+            await applyExtraction(result);
+
+            toast.success(t('extraction_success'), {
+                description: t('extraction_success_desc'),
+                id: tid
+            });
+
+            // Explicitly switch to fields to see results
+            setActiveTab('fields');
+
+        } catch (err: any) {
+            // Check if it's the RLS warning from useCV
+            if (err.message && err.message.includes('RLS')) {
+                toast.warning('Dev Mode Limitation', {
+                    description: t('saved_local_only'), // Ensure this key exists or use fallback
+                    id: tid
+                });
+                setActiveTab('fields');
+            } else {
+                toast.error(t('save_error'), {
+                    description: err.message,
+                    id: tid
+                });
+            }
+        } finally {
+            setPendingExtraction(null);
+        }
+    };
+
+    // Handle CV update from field display
+    const handleCVUpdate = async (updates: Partial<ComprehensiveCV>) => {
+        try {
+            await updateCV(updates);
+
+            toast.success(t('saved'), {
+                description: t('changes_saved'),
+            });
+
+        } catch (err: any) {
+            toast.error(t('save_error'), {
+                description: err.message,
+            });
+        }
+    };
+
+    // Handle delete CV
+    const handleDeleteCV = async () => {
+        if (!confirm(t('delete_confirm'))) return;
+
+        try {
+            await deleteCV();
+            setActiveTab('upload');
+            setAiFeedback(null);
+
+            toast.success(t('deleted'), {
+                description: t('cv_deleted'),
+            });
+
+        } catch (err: any) {
+            toast.error(t('delete_error'), {
+                description: err.message,
+            });
+        }
+    };
+
+    // Get incomplete fields
+    const incompleteFields = fieldStatuses.filter(s => !s.is_complete);
+
+    const handleManualStart = () => {
+        setPendingExtraction(null);
+        setAiFeedback(null);
+        setIsManualModalOpen(true);
+    };
+
+    const handleManualConfirm = async (rawText: string) => {
+        const tid = toast.loading(t('analyzing'), {
+            description: t('extraction_started')
+        });
+
+        try {
+            // Attempt AI extraction from the manually entered text using the latest 2.5 Flash model
+            const result = await extractFromText(rawText, 'google', 'gemini-2.5-flash');
+
+            if (result.success) {
+                // Use optimistic update via applyExtraction -> saveCV
+                await applyExtraction(result);
+                toast.success(t('extraction_success'), { id: tid });
+                setActiveTab('fields');
+            } else {
+                // Fallback: Save just the raw text if AI fails
+                await saveCV({
+                    personal_info: { full_name: '', email: '', phone: '', location: '', linkedin_url: '', website_url: '', summary: '' },
+                    work_experience: [], education: [], skills: [], projects: [], certifications: [], languages: [], additional_sections: [],
+                    raw_text: rawText
+                });
+                toast.warning(t('extraction_failed_manual_fallback'), { id: tid });
+                setActiveTab('fields');
+            }
+        } catch (err: any) {
+            // Second Fallback: Save just the raw text if request fails
+            try {
+                await saveCV({
+                    personal_info: { full_name: '', email: '', phone: '', location: '', linkedin_url: '', website_url: '', summary: '' },
+                    work_experience: [], education: [], skills: [], projects: [], certifications: [], languages: [], additional_sections: [],
+                    raw_text: rawText
+                });
+                toast.warning(t('save_success_ai_failed'), {
+                    description: err.message,
+                    id: tid
+                });
+                setActiveTab('fields');
+            } catch (saveErr: any) {
+                toast.error(t('save_error'), { id: tid });
+            }
+        }
+    };
+
+    return (
+        <AuthGuard>
+            <MainLayout>
+                <div className="container mx-auto p-6 max-w-5xl">
+                    {/* Header */}
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-bold flex items-center gap-2">
+                            <FileText className="h-6 w-6" />
+                            {t('title')}
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            {t('description')}
+                        </p>
+                    </div>
+
+                    {/* Error Display */}
+                    {error && (
+                        <Card className="mb-6 border-destructive">
+                            <CardContent className="py-4">
+                                <div className="flex items-center gap-2 text-destructive">
+                                    <AlertCircle className="h-5 w-5" />
+                                    <span>{error}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Loading State */}
+                    {loading ? (
+                        <Card>
+                            <CardContent className="py-12">
+                                <div className="flex flex-col items-center justify-center gap-3">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                    <p className="text-muted-foreground">{t('loading')}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            {/* Tab Navigation */}
+                            <CVManagerTabs
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                hasCV={cv !== null}
+                                completionPercentage={completionPercentage}
+                                disabled={saving}
+                                className="mb-6"
+                            />
+
+                            {/* Tab Content */}
+                            <div className="space-y-6">
+
+                                {/* Upload Tab */}
+                                {activeTab === 'upload' && (
+                                    <CVUploader
+                                        onExtractionComplete={handleExtractionComplete}
+                                        existingCV={cv}
+                                        disabled={saving}
+                                        allowReupload={!!cv}
+                                        onManualStart={handleManualStart}
+                                    />
+                                )}
+
+                                {/* Refinement Tab / Section */}
+                                {activeTab === 'fields' && cv && (
+                                    <div className="space-y-6">
+                                        {/* AI Feedback / Notes */}
+                                        {aiFeedback && (
+                                            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+                                                <CardHeader className="pb-2">
+                                                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-800 dark:text-blue-300">
+                                                        <Brain className="h-4 w-4" />
+                                                        {t('ai_feedback')}
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p className="text-sm text-blue-700 dark:text-blue-400 whitespace-pre-wrap italic">
+                                                        "{aiFeedback}"
+                                                    </p>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
+                                        {/* Incomplete Fields Warning */}
+                                        {incompleteFields.length > 0 && (
+                                            <CVCompletionForm
+                                                incompleteFields={incompleteFields}
+                                                onFieldClick={(section) => {
+                                                    setEditingSection(section as CVSection);
+                                                }}
+                                            />
+                                        )}
+
+                                        {/* AI Refinement Tool */}
+                                        <Card className="border-primary/20 bg-primary/5">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Sparkles className="h-5 w-5 text-primary" />
+                                                    {t('ai_refinement_title')}
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    {t('ai_refinement_desc')}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <Textarea
+                                                    placeholder={t('refine_placeholder')}
+                                                    value={refineInstructions}
+                                                    onChange={(e) => setRefineInstructions(e.target.value)}
+                                                    rows={3}
+                                                    disabled={isRefining}
+                                                />
+                                                <Button
+                                                    className="w-full"
+                                                    onClick={handleRefine}
+                                                    disabled={isRefining || saving}
+                                                >
+                                                    {isRefining ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                            {t('refining')}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="h-4 w-4 mr-2" />
+                                                            {t('refine_button')}
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Field Display */}
+                                        <CVFieldDisplay
+                                            cv={cv}
+                                            fieldStatuses={fieldStatuses}
+                                            confidence={pendingExtraction?.confidence || 85}
+                                            onUpdate={handleCVUpdate}
+                                            onEditSection={(section) => setEditingSection(section as CVSection)}
+                                        />
+
+                                        {/* Section Editor */}
+                                        {cv && editingSection && (
+                                            <CVSectionEditor
+                                                cv={cv}
+                                                section={editingSection}
+                                                isOpen={!!editingSection}
+                                                onClose={() => setEditingSection(null)}
+                                                onSave={handleCVUpdate}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Preview Tab */}
+                                {activeTab === 'preview' && cv && (
+                                    <CVPreview
+                                        cv={cv}
+                                        locale={locale}
+                                    />
+                                )}
+
+                            </div>
+
+                            {/* Action Bar */}
+                            {cv && activeTab !== 'upload' && (
+                                <div className="mt-8 flex items-center justify-between border-t pt-6">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <CheckCircle className={cn(
+                                            'h-4 w-4',
+                                            completionPercentage === 100 ? 'text-green-500' : 'text-yellow-500'
+                                        )} />
+                                        <span>
+                                            {t('completion', { percent: completionPercentage })}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleDeleteCV}
+                                            disabled={saving}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            {t('delete_cv')}
+                                        </Button>
+
+                                        <Button
+                                            onClick={() => saveCV(cv)}
+                                            disabled={saving}
+                                        >
+                                            {saving ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    {t('saving')}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="h-4 w-4 mr-2" />
+                                                    {t('save_cv')}
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+                <ManualEntryModal
+                    isOpen={isManualModalOpen}
+                    onClose={() => setIsManualModalOpen(false)}
+                    onConfirm={handleManualConfirm}
+                />
+            </MainLayout>
+        </AuthGuard>
+    );
+}
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import {
+    FileText, Upload, AlertCircle, Loader2, FileUp, Clipboard, CheckCircle, Brain, Sparkles, Plus, RefreshCw
+} from 'lucide-react';
+import { useCV } from '@/hooks/useCV';
+import { useAIKeys } from '@/hooks/useAIKeys';
+import { AIProviderName, CVExtractionResult, ComprehensiveCV, AIModel } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+interface CVUploaderProps {
+    onExtractionComplete: (result: CVExtractionResult) => void;
+    existingCV: ComprehensiveCV | null;
+    disabled?: boolean;
+    allowReupload?: boolean;
+    onManualStart?: () => void;
+}
+
+export function CVUploader({
+    onExtractionComplete,
+    existingCV,
+    disabled = false,
+    allowReupload = false,
+    onManualStart
+}: CVUploaderProps) {
+    const t = useTranslations('cv');
+    const { extractFromFile, extractFromText } = useCV();
+    const { getModelsForProvider, validProviders, fetchKeys, loading: keysLoading } = useAIKeys();
+
+    const [activeTab, setActiveTab] = useState<'file' | 'text'>('file');
+    const [file, setFile] = useState<File | null>(null);
+    const [text, setText] = useState('');
+    const [isDragActive, setIsDragActive] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+
+    // AI Settings State
+    // validProviders is now directly from the hook
+    const [selectedProvider, setSelectedProvider] = useState<AIProviderName | ''>('');
+    const [selectedModel, setSelectedModel] = useState<string>('');
+
+    // Derived available models
+    const availableModels = selectedProvider ? getModelsForProvider(selectedProvider as AIProviderName) : [];
+
+    // Sync provider when validProviders change
+    useEffect(() => {
+        // Also trigger a re-fetch on mount to ensure we pick up changes from settings
+        fetchKeys();
+    }, [fetchKeys]);
+
+    useEffect(() => {
+        if (!selectedProvider && validProviders.length > 0) {
+            setSelectedProvider(validProviders[0]);
+        }
+    }, [validProviders, selectedProvider]);
+
+    // Sync model when provider changes or models available
+    useEffect(() => {
+        if (selectedProvider) {
+            const models = getModelsForProvider(selectedProvider as AIProviderName);
+            if (models.length > 0 && !selectedModel) {
+                setSelectedModel(models[0].model_id);
+            }
+        }
+    }, [selectedProvider, getModelsForProvider, selectedModel]);
+
+    // Update model when provider changes
+    const handleProviderChange = (provider: AIProviderName) => {
+        setSelectedProvider(provider);
+        const models = getModelsForProvider(provider);
+        if (models.length > 0) {
+            setSelectedModel(models[0].model_id);
+        } else {
+            setSelectedModel('');
+        }
+    };
+
+    // Drag and drop handlers
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        if (!disabled) setIsDragActive(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragActive(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragActive(false);
+
+        if (disabled) return;
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const droppedFile = e.dataTransfer.files[0];
+            validateAndSetFile(droppedFile);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            validateAndSetFile(e.target.files[0]);
+        }
+    };
+
+    const validateAndSetFile = (file: File) => {
+        const validTypes = [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+            'text/markdown'
+        ];
+
+        if (!validTypes.includes(file.type) && !file.name.endsWith('.md')) { // strict mime type check might fail for md
+            toast.error(t('errors.validation.invalid_file_type', { formats: '.pdf, .docx, .txt, .md' }));
+            return;
+        }
+
+        // Size check (e.g. 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(t('errors.validation.file_too_large', { size: 5 }));
+            return;
+        }
+
+        setFile(file);
+    };
+
+    const handleExtract = async () => {
+        if (!selectedProvider || !selectedModel) {
+            toast.error(t('select_ai_first'));
+            return;
+        }
+
+        setIsExtracting(true);
+
+        try {
+            let result: CVExtractionResult;
+
+            if (activeTab === 'file' && file) {
+                result = await extractFromFile(file, selectedProvider, selectedModel);
+            } else if (activeTab === 'text' && text.trim()) {
+                result = await extractFromText(text, selectedProvider, selectedModel);
+            } else {
+                toast.error(t('provide_content'));
+                setIsExtracting(false);
+                return;
+            }
+
+            onExtractionComplete(result);
+
+        } catch (err: any) {
+            toast.error(err.message || t('extraction_failed'));
+        } finally {
+            setIsExtracting(false);
+        }
+    };
+
+    // If CV exists and reupload not requested, show concise state or nothing
+    // But usually this component is mounted when user WANTS to upload (e.g. in Upload tab)
+
+    return (
+        <Card className="w-full max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <FileUp className="h-5 w-5" />
+                    {t('upload_cv')}
+                </CardTitle>
+                <CardDescription>
+                    {t('upload_description')}
+                </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+
+                {/* AI Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-1">
+                            <Label className="flex items-center gap-1">
+                                <Brain className="h-4 w-4" />
+                                {t('ai_provider')}
+                            </Label>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => fetchKeys()}
+                                disabled={keysLoading || isExtracting}
+                                title={t('refresh_keys')}
+                            >
+                                <RefreshCw className={cn("h-3 w-3", keysLoading && "animate-spin")} />
+                            </Button>
+                        </div>
+                        <Select
+                            value={selectedProvider || ""}
+                            onValueChange={(val) => handleProviderChange(val as AIProviderName)}
+                            disabled={isExtracting || disabled || validProviders.length === 0}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder={t('select_provider')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {validProviders.map(p => (
+                                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                                ))}
+                                {validProviders.length === 0 && (
+                                    <SelectItem value="none" disabled>{t('no_providers')}</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-1">
+                            <Sparkles className="h-4 w-4" />
+                            {t('ai_model')}
+                        </Label>
+                        <Select
+                            value={selectedModel || ""}
+                            onValueChange={setSelectedModel}
+                            disabled={isExtracting || disabled || !selectedProvider}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder={t('select_model')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableModels
+                                    .filter(m => m.model_id && m.model_id.trim() !== '')
+                                    .map(m => (
+                                        <SelectItem key={m.model_id} value={m.model_id}>{m.model_name}</SelectItem>
+                                    ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'file' | 'text')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="file" disabled={isExtracting || disabled}>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {t('file_upload')}
+                        </TabsTrigger>
+                        <TabsTrigger value="text" disabled={isExtracting || disabled}>
+                            <Clipboard className="h-4 w-4 mr-2" />
+                            {t('paste_text')}
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="file" className="mt-4">
+                        <div
+                            className={cn(
+                                "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+                                isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+                                disabled && "opacity-50 cursor-not-allowed",
+                                file && "border-green-500 bg-green-50 dark:bg-green-950/20"
+                            )}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => !disabled && document.getElementById('file-upload')?.click()}
+                        >
+                            <input
+                                id="file-upload"
+                                type="file"
+                                className="hidden"
+                                onChange={handleFileChange}
+                                accept=".pdf,.docx,.txt,.md"
+                                disabled={disabled}
+                            />
+
+                            <div className="flex flex-col items-center gap-2">
+                                {file ? (
+                                    <>
+                                        <FileText className="h-10 w-10 text-green-500" />
+                                        <div className="font-medium text-green-700 dark:text-green-400">
+                                            {file.name}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="mt-2 text-destructive hover:text-destructive z-10"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setFile(null);
+                                            }}
+                                            disabled={isExtracting}
+                                        >
+                                            {t('remove')}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-10 w-10 text-muted-foreground" />
+                                        <p className="font-medium">
+                                            {t('upload_drag_drop')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('supported_formats')} {t('max_size', { size: 5 })}
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="text" className="mt-4">
+                        <Textarea
+                            placeholder={t('paste_placeholder')}
+                            className="min-h-[200px] font-mono text-sm"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            disabled={isExtracting || disabled}
+                        />
+                    </TabsContent>
+                </Tabs>
+
+                <Button
+                    className="w-full"
+                    onClick={handleExtract}
+                    disabled={
+                        isExtracting ||
+                        disabled ||
+                        !selectedProvider ||
+                        !selectedModel ||
+                        (activeTab === 'file' && !file) ||
+                        (activeTab === 'text' && !text.trim())
+                    }
+                >
+                    {isExtracting ? (
+                        <span className="flex items-center justify-center pointer-events-none" key="extracting">
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {t('extracting_info')}
+                        </span>
+                    ) : (
+                        <span className="flex items-center justify-center pointer-events-none" key="idle">
+                            <Brain className="h-4 w-4 mr-2" />
+                            {t('extract_data')}
+                        </span>
+                    )}
+                </Button>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            {t('or_enter_manually')}
+                        </span>
+                    </div>
+                </div>
+
+                <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={onManualStart}
+                    disabled={isExtracting || disabled}
+                >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('enter_manually')}
+                </Button>
+
+                {existingCV && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                        <AlertCircle className="h-4 w-4" />
+                        {t('replace_confirm')}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+// ============================================
+// [F074] src/lib/cv/cv-extractor.ts
+// AI-Powered CV Field Extraction
+// ============================================
+
+import { getAIProvider } from '@/lib/ai';
+import { AIProviderConfig, AICompletionOptions } from '@/lib/ai/ai-provider';
+import {
+    CVExtractionResult,
+    CVExtractionRequest,
+    ComprehensiveCV,
+} from '@/lib/types';
+import {
+    CV_EXTRACTION_SYSTEM_PROMPT,
+    CV_EXTRACTION_USER_PROMPT,
+    CV_REFINE_SYSTEM_PROMPT,
+    CV_REFINE_USER_PROMPT,
+} from './cv-extraction-prompt';
+import { validateExtractedCV, getCompletionPercentage } from './cv-validator';
+import { generateId } from '@/lib/helpers';
+
+/**
+ * Transforms raw AI output into a standardized ComprehensiveCV structure
+ */
+function transformAICVData(parsed: any, rawText?: string): Partial<ComprehensiveCV> {
+    const addIds = (arr: any[]) =>
+        (arr || []).map(item => ({
+            ...item,
+            id: item.id || generateId()
+        }));
+
+    // Smart mapping for personal info
+    const pi = parsed.personal_info || parsed.personal || parsed.profile || {};
+    const personal_info = {
+        full_name: pi.full_name || pi.name || pi.fullName || pi.name_and_surname || '',
+        email: pi.email || pi.email_address || pi.contact_email || '',
+        phone: pi.phone || pi.phone_number || pi.mobile || pi.contact_number || '',
+        location: pi.location || pi.address || pi.city || pi.permanent_address || '',
+        linkedin_url: pi.linkedin_url || pi.linkedin || '',
+        website_url: pi.website_url || pi.website || pi.portfolio || '',
+        summary: pi.summary || pi.professional_summary || pi.about || pi.research_summary || '',
+    };
+
+    return {
+        personal_info,
+        work_experience: addIds(parsed.work_experience || parsed.experience || parsed.work_history || parsed.historical_positions || []),
+        education: addIds(parsed.education || parsed.educational_qualification || parsed.academic_background || parsed.edu || []),
+        skills: parsed.skills || parsed.technical_proficiency || parsed.competencies || [],
+        certifications: addIds(parsed.certifications || parsed.certificates || parsed.awards || []),
+        languages: (parsed.languages || parsed.language_proficiency || []).map((l: any) => ({
+            language: l.language || l.name || (typeof l === 'string' ? l : ''),
+            proficiency: (l.proficiency?.toLowerCase() || 'intermediate') as any,
+        })),
+        projects: addIds(parsed.projects || parsed.research_projects || []),
+        additional_sections: addIds(parsed.additional_sections || parsed.other_info || []),
+        raw_text: rawText || parsed.raw_text,
+    };
+}
+
+export async function extractCVWithAI(
+    request: CVExtractionRequest,
+    apiKey: string
+): Promise<CVExtractionResult> {
+    const { rawText, aiProvider, aiModel } = request;
+
+    try {
+        const provider = getAIProvider(aiProvider);
+
+        console.log(`[CV Extractor] Starting extraction with ${aiProvider}: ${aiModel}`, {
+            textLength: rawText?.length || 0
+        });
+
+        const config: AIProviderConfig = {
+            apiKey,
+            temperature: 0.1,
+            maxTokens: 4096,
+        };
+
+        const options: AICompletionOptions = {
+            model: aiModel,
+            messages: [
+                { id: 'sys-1', role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT, timestamp: new Date().toISOString() },
+                { id: 'usr-1', role: 'user', content: CV_EXTRACTION_USER_PROMPT(rawText), timestamp: new Date().toISOString() },
+            ],
+            jsonMode: true,
+        };
+
+        const response = await provider.complete(config, options);
+        console.log(`[CV Extractor] Raw response received. Length: ${response?.length || 0}`);
+
+        if (!response) {
+            throw new Error('AI provider returned an empty response');
+        }
+
+        const parsed = provider.parseJsonResponse<any>(response);
+
+        if (!parsed) {
+            console.error(`[CV Extractor] Failed to parse JSON. Raw response head: ${response.substring(0, 500)}...`);
+            return {
+                success: false,
+                cv: {},
+                fieldStatuses: [],
+                confidence: 0,
+                rawText,
+                aiProvider,
+                aiModel,
+                extractionNotes: 'AI failed to return a valid JSON structure. Please try again or use a different model.',
+            };
+        }
+
+        // Transform parsed data to our CV structure
+        const cv = transformAICVData(parsed, rawText);
+
+        console.log(`[CV Extractor] Transformation complete. Sections found:`, {
+            exps: cv.work_experience?.length,
+            edu: cv.education?.length,
+            skills: cv.skills?.length,
+            langs: cv.languages?.length,
+            certs: cv.certifications?.length
+        });
+
+        const fieldStatuses = validateExtractedCV(cv);
+        const completionPercentage = getCompletionPercentage(fieldStatuses);
+
+        return {
+            success: true,
+            cv,
+            fieldStatuses,
+            confidence: parsed.confidence || completionPercentage,
+            rawText,
+            aiProvider,
+            aiModel,
+            extractionNotes: parsed.notes,
+        };
+    } catch (error: any) {
+        console.error(`[CV Extractor] Critical error encountered:`, error);
+        return {
+            success: false,
+            cv: {},
+            fieldStatuses: [],
+            confidence: 0,
+            rawText,
+            aiProvider,
+            aiModel,
+            extractionNotes: `Extraction failed: ${error.message || 'Unknown AI error'}`,
+        };
+    }
+}
+
+/**
+ * Refines an existing CV based on user edits or instructions
+ */
+export async function refineCVWithAI(
+    currentCV: Partial<ComprehensiveCV>,
+    apiKey: string,
+    aiProvider: string,
+    aiModel: string,
+    instructions?: string,
+    additionalText?: string
+): Promise<CVExtractionResult> {
+    const provider = getAIProvider(aiProvider as any);
+
+    const config: AIProviderConfig = {
+        apiKey,
+        temperature: 0.2, // Slightly higher for refinement creativity
+        maxTokens: 4096,
+    };
+
+    const options: AICompletionOptions = {
+        model: aiModel,
+        messages: [
+            { id: 'sys-refine', role: 'system', content: CV_REFINE_SYSTEM_PROMPT, timestamp: new Date().toISOString() },
+            { id: 'usr-refine', role: 'user', content: CV_REFINE_USER_PROMPT(currentCV, additionalText, instructions), timestamp: new Date().toISOString() },
+        ],
+        jsonMode: aiProvider !== 'google',
+    };
+
+    try {
+        console.log(`[CV Refiner] Starting refinement with ${aiProvider}: ${aiModel}`);
+        const response = await provider.complete(config, options);
+        const parsed = provider.parseJsonResponse<any>(response);
+
+        if (!parsed) {
+            throw new Error('Failed to parse AI response as JSON');
+        }
+
+        const cv = transformAICVData(parsed, additionalText || currentCV.raw_text);
+        const fieldStatuses = validateExtractedCV(cv);
+        const completionPercentage = getCompletionPercentage(fieldStatuses);
+
+        return {
+            success: true,
+            cv,
+            fieldStatuses,
+            confidence: parsed.confidence || completionPercentage,
+            rawText: additionalText || currentCV.raw_text || '',
+            aiProvider: aiProvider as any,
+            aiModel,
+            extractionNotes: parsed.notes,
+        };
+    } catch (error: any) {
+        console.error(`[CV Refiner] Error:`, error);
+        return {
+            success: false,
+            cv: currentCV,
+            fieldStatuses: validateExtractedCV(currentCV),
+            confidence: 0,
+            rawText: additionalText || currentCV.raw_text || '',
+            aiProvider: aiProvider as any,
+            aiModel,
+            extractionNotes: `Refinement failed: ${error.message}`,
+        };
+    }
+}
+
+// ============================================
+// [F110] src/app/api/cv/extract/route.ts
+// CV Extraction API Route
+// ============================================
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { extractCVWithAI } from '@/lib/cv';
+import { decryptApiKey } from '@/lib/encryption';
+import { parseFile } from '@/lib/parsers';
+import { AIProviderName } from '@/lib/types';
+import { isDevUser } from '@/lib/auth/dev-auth';
+import { getUserId } from '@/lib/auth/server-auth';
+
+export async function POST(request: NextRequest) {
+    try {
+        const userId = await getUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Validate Content-Type
+        const contentType = request.headers.get('content-type') || '';
+        if (!contentType.includes('multipart/form-data')) {
+            console.error(`[API Extract] Invalid Content-Type: ${contentType}`);
+            return NextResponse.json({
+                error: 'Expected multipart/form-data request'
+            }, { status: 400 });
+        }
+
+        const supabase = await createServerSupabaseClient();
+
+        const formData = await request.formData();
+        const file = formData.get('file') as File | null;
+        const rawText = formData.get('rawText') as string | null;
+        const provider = formData.get('provider') as AIProviderName;
+        const model = formData.get('model') as string;
+
+        console.log('[API Extract] Request received:', {
+            hasFile: !!file,
+            hasRawText: !!rawText,
+            provider,
+            model
+        });
+
+        if (!provider || !model) {
+            return NextResponse.json({
+                error: 'AI provider and model are required',
+            }, { status: 400 });
+        }
+
+        // Get the user's API key for this provider
+        const { data: keyData, error: keyError } = await supabase
+            .from('ai_api_keys')
+            .select('api_key_encrypted')
+            .eq('user_id', userId)
+            .eq('provider_name', provider)
+            .single();
+
+        if (keyError || !keyData) {
+            // MOCK BYPASS: Check if we should use mock key (if dev user and DB lookup fails)
+            if (isDevUser(userId)) {
+                console.log('[API Extract] Using MOCK KEY for Dev User fallback');
+                // Create a fake encrypted key object to pass the check, or just handle logic below
+                // Better: Set a flag or handle apiKey assignment directly
+            } else {
+                console.error(`[API Extract] API Key not found for ${provider}`);
+                return NextResponse.json({
+                    error: `No API key found for ${provider}. Please add one in Settings.`,
+                }, { status: 400 });
+            }
+        }
+
+        // Decrypt the API key
+        let apiKey: string;
+        try {
+            if (keyData) {
+                apiKey = decryptApiKey(keyData.api_key_encrypted);
+            } else if (isDevUser(userId)) {
+                apiKey = 'TEST_KEY_MOCK';
+            } else {
+                throw new Error('No key data available');
+            }
+        } catch (e) {
+            console.error('[API Extract] Decryption failed');
+            return NextResponse.json({
+                error: 'Failed to decrypt API key',
+            }, { status: 500 });
+        }
+
+        // Get the raw text (either from file or direct input)
+        let textToProcess: string;
+
+        if (file) {
+            console.log(`[API Extract] Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+            try {
+                const parsed = await parseFile(file);
+                textToProcess = parsed.text;
+                console.log(`[API Extract] File parsed successfully. Text length: ${textToProcess.length}`);
+            } catch (error: any) {
+                console.error(`[API Extract] File parsing failed:`, error);
+                return NextResponse.json({
+                    error: `Failed to parse file: ${error.message}`,
+                }, { status: 400 });
+            }
+        } else if (rawText) {
+            console.log(`[API Extract] Received raw text. Length: ${rawText.length}`);
+            textToProcess = rawText;
+        } else {
+            return NextResponse.json({
+                error: 'Either file or rawText is required',
+            }, { status: 400 });
+        }
+
+        if (!textToProcess || textToProcess.trim().length === 0) {
+            return NextResponse.json({
+                error: 'Document text is empty after parsing. Please check the file/text.',
+            }, { status: 400 });
+        }
+
+        // Extract CV fields using AI
+        console.log(`[API Extract] Calling AI extraction with ${provider}...`);
+        const result = await extractCVWithAI(
+            {
+                rawText: textToProcess,
+                aiProvider: provider,
+                aiModel: model,
+            },
+            apiKey
+        );
+        console.log(`[API Extract] AI extraction finished. Success: ${result.success}`);
+
+        return NextResponse.json(result);
+    } catch (error: any) {
+        console.error('[API Extract] Unhandled Server Error:', error);
+        return NextResponse.json({
+            error: 'Internal server error during extraction process',
+            details: error.message,
+            stack: error.stack
+        }, { status: 500 });
+    }
+}
+// ═══════════════════════════════════════════════════════════════
+// [F089] src/lib/auth/dev-auth.ts
+// Development Authentication Utilities
+// ═══════════════════════════════════════════════════════════════
+
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@/lib/types';
+import { toast } from 'sonner';
+import { DEV_USER_ID_PREFIX } from '@/lib/constants';
+
+/**
+ * Checks if a user ID is a mock dev user ID
+ */
+export function isDevUser(userId: string | null | undefined): boolean {
+    if (!userId) return false;
+    return userId.startsWith(DEV_USER_ID_PREFIX) || userId.startsWith('dev-user-'); // Keep legacy support for a bit
+}
+export async function devLogin(email: string, name: string): Promise<User | null> {
+    const supabase = createClient();
+
+    try {
+        // 1. Check if user exists
+        const { data: existingUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "No rows found"
+            console.error('Error fetching user:', fetchError);
+            throw fetchError;
+        }
+
+        let user = existingUser;
+
+        // 2. If not, create user
+        if (!existingUser) {
+            const { data: newUser, error: createError } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        email,
+                        name,
+                        preferred_language: 'en', // Default to English
+                    }
+                ])
+                .select()
+                .single();
+
+            if (createError) {
+                console.error('Error creating user:', createError);
+                throw createError;
+            }
+
+            user = newUser;
+        }
+
+        // 3. Store minimal session info in localStorage for dev purposes
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cv_tailor_dev_user_id', user.id);
+        }
+
+        // Map database user to application User type
+        return {
+            id: user.id,
+            google_id: user.google_id,
+            email: user.email,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            preferred_language: user.preferred_language as 'en' | 'fa',
+            created_at: user.created_at,
+            updated_at: user.updated_at
+        };
+
+    } catch (error) {
+        console.error('Dev login failed:', error);
+        toast.error('Login failed. Please check console for details.');
+        return null;
+    }
+}
+
+/**
+ * Logout function
+ */
+export function devLogout(): void {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('cv_tailor_dev_user_id');
+    }
+}
+
+/**
+ * Get current user from storage and verify with DB
+ */
+export async function getCurrentUser(): Promise<User | null> {
+    if (typeof window === 'undefined') return null;
+
+    const userId = localStorage.getItem('cv_tailor_dev_user_id');
+    if (!userId) return null;
+
+    const supabase = createClient();
+
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error || !user) {
+            // Invalid session, clear it
+            localStorage.removeItem('cv_tailor_dev_user_id');
+            return null;
+        }
+
+        return {
+            id: user.id,
+            google_id: user.google_id,
+            email: user.email,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            preferred_language: user.preferred_language as 'en' | 'fa',
+            created_at: user.created_at,
+            updated_at: user.updated_at
+        };
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
+    }
+}

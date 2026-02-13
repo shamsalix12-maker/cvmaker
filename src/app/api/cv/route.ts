@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { createCVService } from '@/lib/cv/cv-service';
 import { ComprehensiveCV } from '@/lib/types';
 import { isDevUser } from '@/lib/auth/dev-auth';
