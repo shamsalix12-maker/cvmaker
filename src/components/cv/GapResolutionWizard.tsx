@@ -88,7 +88,7 @@ export function GapResolutionWizard({
   const progressPercent = totalGaps > 0
     ? Math.round(((resolvedCount + skippedCount) / totalGaps) * 100)
     : 100;
-  
+
   // Reset input when gap changes (useEffect to avoid render-during-render)
   useEffect(() => {
     if (currentGap?.id !== prevGapId) {
@@ -112,11 +112,7 @@ export function GapResolutionWizard({
 
     onResolve(currentGap.id, value);
     setInputValue('');
-
-    if (activeGaps.length <= 1) {
-      onComplete();
-    }
-  }, [currentGap, inputValue, activeGaps.length, onResolve, onComplete]);
+  }, [currentGap, inputValue, onResolve]);
 
   const handleSkip = useCallback(() => {
     if (!currentGap) return;
@@ -129,11 +125,7 @@ export function GapResolutionWizard({
     onSkip(currentGap.id);
     setConfirmSkip(false);
     setInputValue('');
-
-    if (activeGaps.length <= 1) {
-      onComplete();
-    }
-  }, [currentGap, confirmSkip, activeGaps.length, onSkip, onComplete]);
+  }, [currentGap, onSkip]);
 
   const handleAcceptSuggestion = useCallback(() => {
     if (currentGap?.suggested_value) {
