@@ -49,3 +49,7 @@
     - **Refinement**: Users can now modify professional summaries, work experience descriptions, education details, and skills directly.
     - **Save/Cancel Flow**: Added "Apply Changes" and "Cancel" buttons to ensure data safety.
     - **Navigation**: Added a functional "Back" button to return to the start/gaps page.
+- **Skip to Save Flow**:
+    - Added "Skip and Save Directly" (ذخیره مستقیم) buttons to both the `Classification Review` and `Gap Analysis Dashboard` steps.
+    - This allows users to bypass the AI refinement process if they just want to store their extracted data quickly.
+    - The button correctly routes users to the final review/edit step for storage.

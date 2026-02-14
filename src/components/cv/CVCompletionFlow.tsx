@@ -968,6 +968,7 @@ export function CVCompletionFlow({
             onReject={handleRejectClassification}
             onConfirmAll={handleConfirmAllClassifications}
             onContinue={() => goToStep('gap_analysis')}
+            onSkipToSave={() => goToStep('review')}
           />
         );
 
@@ -995,6 +996,7 @@ export function CVCompletionFlow({
             locale={locale}
             onStartResolving={() => goToStep('gap_resolution')}
             onGapClick={() => goToStep('gap_resolution')}
+            onSkipToSave={() => goToStep('review')}
           />
         );
 

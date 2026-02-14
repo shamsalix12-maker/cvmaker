@@ -14,6 +14,7 @@ interface ClassificationReviewProps {
   onReject: (index: number) => void;
   onConfirmAll: () => void;
   onContinue: () => void;
+  onSkipToSave?: () => void;
 }
 
 export function ClassificationReview({
@@ -23,6 +24,7 @@ export function ClassificationReview({
   onReject,
   onConfirmAll,
   onContinue,
+  onSkipToSave,
 }: ClassificationReviewProps) {
   const isRTL = locale === 'fa';
 
@@ -118,6 +120,14 @@ export function ClassificationReview({
         >
           {locale === 'fa' ? 'ادامه →' : 'Continue →'}
         </button>
+        {onSkipToSave && (
+          <button
+            onClick={onSkipToSave}
+            className="px-6 py-3 border-2 border-green-600 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors font-medium"
+          >
+            💾 {locale === 'fa' ? 'ذخیره مستقیم (بدون تحلیل)' : 'Skip and Save Directly'}
+          </button>
+        )}
       </div>
     </div>
   );

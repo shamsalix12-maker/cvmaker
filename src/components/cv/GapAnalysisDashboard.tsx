@@ -25,6 +25,8 @@ interface GapAnalysisDashboardProps {
   onStartResolving: () => void;
   /** کلیک بر یک نقص خاص */
   onGapClick: (gap: CVGapItem) => void;
+  /** ذخیره مستقیم بدون تحلیل نواقص */
+  onSkipToSave?: () => void;
 }
 
 // ─── Severity Config ───
@@ -83,6 +85,7 @@ export function GapAnalysisDashboard({
   locale,
   onStartResolving,
   onGapClick,
+  onSkipToSave,
 }: GapAnalysisDashboardProps) {
   const isRTL = locale === 'fa';
 
@@ -179,7 +182,7 @@ export function GapAnalysisDashboard({
                 const numScore = score as number;
                 const barColor =
                   numScore >= 70 ? 'bg-green-500' :
-                  numScore >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+                    numScore >= 40 ? 'bg-yellow-500' : 'bg-red-500';
 
                 return (
                   <div
@@ -250,13 +253,24 @@ export function GapAnalysisDashboard({
               <span>📋</span>
               {locale === 'fa' ? 'نواقص و پیشنهادات بهبود' : 'Gaps & Improvement Suggestions'}
             </h3>
-            <button
-              onClick={onStartResolving}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
-            >
-              <span>🔧</span>
-              {locale === 'fa' ? 'شروع رفع نواقص' : 'Start Fixing Gaps'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={onStartResolving}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
+              >
+                <span>🔧</span>
+                {locale === 'fa' ? 'شروع رفع نواقص' : 'Start Fixing Gaps'}
+              </button>
+              {onSkipToSave && (
+                <button
+                  onClick={onSkipToSave}
+                  className="px-5 py-2.5 bg-white dark:bg-gray-800 text-green-600 dark:text-green-400 border border-green-600 dark:border-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
+                >
+                  <span>💾</span>
+                  {locale === 'fa' ? 'ذخیره مستقیم' : 'Save Directly'}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Gap groups */}
