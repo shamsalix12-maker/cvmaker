@@ -746,10 +746,18 @@ export function CVCompletionFlow({
               </div>
             </div>
 
-            <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
+            <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+              {existingCV && (
+                <button
+                  onClick={() => goToStep('review')}
+                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors flex items-center gap-1"
+                >
+                  📂 {locale === 'fa' ? 'مشاهده مستقیم رزومه قبلی' : 'View saved CV directly'}
+                </button>
+              )}
               <button
                 onClick={handleDomainsConfirm}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium flex items-center gap-2 shadow-sm"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium flex items-center gap-2 shadow-sm ms-auto"
               >
                 {locale === 'fa' ? 'ادامه' : 'Continue'}
                 <span>{isRTL ? '←' : '→'}</span>
