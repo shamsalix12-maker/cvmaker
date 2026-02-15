@@ -127,7 +127,7 @@ export function GapResolutionWizard({
     onSkip(currentGap.id);
     setConfirmSkip(false);
     setInputValue('');
-  }, [currentGap, onSkip]);
+  }, [currentGap, onSkip, confirmSkip]);
 
   const handleAcceptSuggestion = useCallback(() => {
     if (currentGap?.suggested_value) {
