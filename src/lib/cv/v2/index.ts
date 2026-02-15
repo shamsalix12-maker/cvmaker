@@ -40,8 +40,10 @@ export class CVProcessorV2 {
         console.log('[CVProcessorV2] starting full process');
         // 1. Extract
         let extraction;
+        let extractionRaw = '';
         try {
             extraction = await this.extractor.extract(rawText);
+            extractionRaw = (extraction as any).rawResponse || '';
         } catch (e: any) {
             console.error('[CVProcessorV2] Extraction CRITICAL failure:', e);
             return { success: false, step: 'extraction', error: e.message };
@@ -56,8 +58,10 @@ export class CVProcessorV2 {
 
         // 2. Audit
         let auditResult = null;
+        let auditRaw = '';
         try {
             const audit = await this.auditor.audit(extraction.cv);
+            auditRaw = (audit as any).rawResponse || '';
             if (audit.success && audit.audit) {
                 auditResult = audit.audit;
                 console.log('[CVProcessorV2] Audit success');
@@ -70,9 +74,11 @@ export class CVProcessorV2 {
 
         // 3. Gaps
         let gapsResult = null;
+        let gapsRaw = '';
         if (auditResult) {
             try {
                 const gaps = await this.gapGenerator.generate(auditResult, domainRules);
+                gapsRaw = (gaps as any).rawResponse || '';
                 if (gaps.success && gaps.guidance) {
                     gapsResult = gaps.guidance;
                     console.log('[CVProcessorV2] Gaps success');
@@ -89,6 +95,9 @@ export class CVProcessorV2 {
             cv: extraction.cv,
             audit: auditResult,
             gaps: gapsResult,
+            extractionRaw,
+            auditRaw,
+            gapsRaw
         };
     }
 

@@ -20,5 +20,6 @@
 - Hardened V2 Pipeline resilience by relaxing Zod schemas (making many AI-generated fields optional/defaulted) and ensuring robust ID/date normalization.
 - Added comprehensive server-side logging and error boundaries to prevent UI bounces on partial failures.
 - **SUCCESSFUL MODEL UPDATE**: Integrated support for the latest **Gemini 2.5 Flash** and **Gemini 3 Flash** models.
-- **API KEY RESOLUTION**: Applied user's experimental API key which supports Gemini 2.5/3; reverted default model to `gemini-2.5-flash` to match key permissions (avoiding 404s on older models).
-- **DIAGNOSTIC HARDENING**: Implemented detailed error views in `CVCompletionFlow` to persist failures and show metadata (stack traces, API errors) for better debugging.
+- **API KEY RESOLUTION**: Applied user's experimental API key. Identified that standard IDs like `gemini-1.5-flash` return 404, while `gemini-2.5-flash` has a strict 20-request/day quota.
+- **FINAL STABILITY FIX**: Switched default model to `gemini-flash-latest`, which is fully supported by the new key and provides a high, reliable quota.
+- **DIAGNOSTIC UPDATE**: Added exhaustive server-side logging to all V2 pipeline components (`BlindExtractor`, `Auditor`, `GapGenerator`) to debug "hollow extraction" (0% score) issues by capturing raw AI output.

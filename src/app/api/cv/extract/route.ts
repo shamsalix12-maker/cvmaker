@@ -198,6 +198,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(result, { status: 400 });
         }
 
+        const isHollow = result.success && (result.audit?.overall_score === 0 || !result.gaps || result.gaps.items.length === 0);
+
         const mappedResponse = {
           ...result,
           cv: result.cv ? v2.toComprehensiveCV(result.cv) : null,
@@ -205,12 +207,23 @@ export async function POST(request: NextRequest) {
           aiProvider: provider,
           aiModel: model,
           rawText: textToProcess,
+          isHollow, // Flag for the UI
+          debug: isHollow ? {
+            extraction: result.extractionRaw,
+            audit: result.auditRaw,
+            gaps: result.gapsRaw
+          } : undefined
         };
+
+        if (isHollow) {
+          console.warn('[API Extract] Hollow result detected. Score 0 or no gaps.');
+        }
 
         console.log('[API Extract] V2.0 success! Mapping confirmed.', {
           hasCV: !!mappedResponse.cv,
           hasGaps: !!mappedResponse.gapAnalysis,
-          gapCount: mappedResponse.gapAnalysis?.gaps?.length || 0
+          gapCount: mappedResponse.gapAnalysis?.gaps?.length || 0,
+          isHollow
         });
 
         return NextResponse.json(mappedResponse);

@@ -67,6 +67,7 @@ export class GapGenerator {
                 parsedData = provider.parseJsonResponse(response);
             } catch (e) {
                 console.error('[GapGenerator] JSON Parse failed:', e);
+                console.log('[GapGenerator] Faulty raw response:', response);
                 return {
                     success: false,
                     guidance: null,
@@ -74,6 +75,8 @@ export class GapGenerator {
                     rawResponse: response,
                 };
             }
+
+            console.log('[GapGenerator] JSON Parsed successfully. Item count:', parsedData.items?.length);
 
             // Ensure basic structure for Zod
             const normalizedData = {

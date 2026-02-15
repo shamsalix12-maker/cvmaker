@@ -67,6 +67,7 @@ export class Auditor {
                 parsedData = provider.parseJsonResponse(response);
             } catch (e) {
                 console.error('[Auditor] JSON Parse failed:', e);
+                console.log('[Auditor] Faulty raw response:', response);
                 return {
                     success: false,
                     audit: null,
@@ -74,6 +75,8 @@ export class Auditor {
                     rawResponse: response,
                 };
             }
+
+            console.log('[Auditor] JSON Parsed successfully. Score:', parsedData.overall_score);
 
             // Ensure basic structure for Zod
             const normalizedData = {
@@ -88,6 +91,7 @@ export class Auditor {
 
             if (!validation.success) {
                 console.error('[Auditor] Zod Validation failed:', validation.error.format());
+                console.log('[Auditor] Problematic Normalized Data:', JSON.stringify(normalizedData, null, 2));
                 return {
                     success: false,
                     audit: null,
@@ -95,6 +99,8 @@ export class Auditor {
                     rawResponse: response,
                 };
             }
+
+            console.log('[Auditor] Audit validation success. Score:', validation.data.overall_score);
 
             return {
                 success: true,

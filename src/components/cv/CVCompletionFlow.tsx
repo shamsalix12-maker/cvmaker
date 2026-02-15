@@ -418,8 +418,17 @@ export function CVCompletionFlow({
         classifications: [],
         suggested_improvements: result.suggestedImprovements || [],
         translations_applied: result.translationsApplied || [],
-        current_step: 'gap_analysis',
+        current_step: result.isHollow ? 'upload' : 'gap_analysis',
+        is_hollow: result.isHollow,
+        debug_info: result.debug,
       }));
+
+      if (result.isHollow) {
+        setError(isRTL
+          ? 'استخراج محتوا ناقص بود (امتیاز صفر). لطفاً دکمه "اطلاعات فنی" را بزنید.'
+          : 'Extraction returned empty results (0% score). See Debug Info for details.'
+        );
+      }
 
     } catch (err: unknown) {
       console.error('[CVFlow] Extraction error:', err);

@@ -229,4 +229,10 @@ export interface CVCompletionState {
   current_stage?: string;
   /** لیست مراحل استخراج (برای نسخه ۲) */
   extraction_stages?: string[];
+  /** آیا استخراج توخالی یا مشکوک بوده؟ */
+  is_hollow?: boolean;
+  /** اطلاعات دیباگ برای حالت توخالی */
+  debug_info?: any;
+  /** نمایش پنل دیباگ */
+  show_debug?: boolean;
 }

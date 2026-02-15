@@ -67,6 +67,7 @@ export class BlindExtractor {
                 parsedData = provider.parseJsonResponse(response);
             } catch (e) {
                 console.error('[BlindExtractor] JSON Parse failed:', e);
+                console.log('[BlindExtractor] Faulty raw response:', response);
                 return {
                     success: false,
                     cv: null,
@@ -74,6 +75,8 @@ export class BlindExtractor {
                     rawResponse: response,
                 };
             }
+
+            console.log('[BlindExtractor] JSON Parsed successfully. Fields:', Object.keys(parsedData));
 
             // Normalize IDs and required fields before Zod validation
             const normalizedData = this.normalizeExtractedData(parsedData, rawText);
@@ -83,6 +86,7 @@ export class BlindExtractor {
 
             if (!validation.success) {
                 console.error('[BlindExtractor] Zod Validation failed:', validation.error.format());
+                console.log('[BlindExtractor] Problematic Normalized Data:', JSON.stringify(normalizedData, null, 2));
                 return {
                     success: false,
                     cv: null,
@@ -90,6 +94,8 @@ export class BlindExtractor {
                     rawResponse: response,
                 };
             }
+
+            console.log('[BlindExtractor] Extraction validation success');
 
             return {
                 success: true,
