@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           ...result,
           cv: result.cv ? v2.toComprehensiveCV(result.cv as any) : null,
-          gapAnalysis: result.audit ? v2.toV1GapAnalysis(result.audit, result.gaps, selectedDomains) : null,
+          gapAnalysis: v2.toV1GapAnalysis(result.audit, result.gaps, selectedDomains),
         });
       } catch (e: any) {
         console.error('[API Refine] V2 Refinement CRITICAL EXCEPTION:', e);

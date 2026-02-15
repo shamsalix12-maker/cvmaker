@@ -133,13 +133,13 @@ export class CVProcessorV2 {
      * Maps V2 Audit and Gaps to V1 CVGapAnalysis for UI compatibility.
      */
     toV1GapAnalysis(audit: any, gaps: any, selectedDomains: string[] = ['general']): any {
-        if (!audit) return null;
+        const baseScore = audit?.overall_score || 0;
 
         const gapItems = (gaps?.items || []).map((item: any, idx: number) => ({
             id: `gap-v2-${idx}`,
             field_path: item.field,
-            title_en: item.field.replace(/_/g, ' ').toUpperCase(),
-            title_fa: item.field,
+            title_en: item.field?.replace(/_/g, ' ')?.toUpperCase() || 'Missing Field',
+            title_fa: item.field || 'بخش نامشخص',
             description_en: item.guidance_text,
             description_fa: item.guidance_text,
             severity: 'important' as const,
@@ -152,10 +152,10 @@ export class CVProcessorV2 {
             input_type: 'textarea' as const,
             is_skipped: false,
             is_resolved: false,
-            can_skip: item.skip_allowed,
+            can_skip: item.skip_allowed ?? true,
         }));
 
-        const strengths = (audit.items || [])
+        const strengths = (audit?.items || [])
             .filter((item: any) => item && typeof item.quality_score === 'number' && item.quality_score >= 80)
             .map((item: any) => ({
                 title_en: `${item.field_path.replace(/_/g, ' ')} Quality`,
@@ -168,12 +168,14 @@ export class CVProcessorV2 {
         return {
             selected_domains: selectedDomains,
             detected_domains: selectedDomains,
-            overall_score: audit.overall_score || 0,
-            domain_scores: Object.fromEntries(selectedDomains.map(d => [d, audit.overall_score || 0])),
+            overall_score: baseScore,
+            domain_scores: Object.fromEntries(selectedDomains.map(d => [d, baseScore])),
             gaps: gapItems,
             strengths: strengths,
-            analysis_summary: `Overall CV Score: ${audit.overall_score || 0}%. ${gapItems.length} gaps identified that need attention.`,
-            general_recommendations: (audit.items || []).flatMap((i: any) => i.recommendations || []).slice(0, 5),
+            analysis_summary: audit
+                ? `Overall CV Score: ${baseScore}%. ${gapItems.length} gaps identified that need attention.`
+                : 'CV extracted successfully. Deep analysis is currently unavailable.',
+            general_recommendations: (audit?.items || []).flatMap((i: any) => i.recommendations || []).slice(0, 5),
         };
     }
 }

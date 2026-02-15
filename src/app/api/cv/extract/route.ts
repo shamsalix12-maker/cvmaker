@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         const mappedResponse = {
           ...result,
           cv: result.cv ? v2.toComprehensiveCV(result.cv) : null,
-          gapAnalysis: result.audit ? v2.toV1GapAnalysis(result.audit, result.gaps, selectedDomains) : null,
+          gapAnalysis: v2.toV1GapAnalysis(result.audit, result.gaps, selectedDomains),
           aiProvider: provider,
           aiModel: model,
           rawText: textToProcess,
