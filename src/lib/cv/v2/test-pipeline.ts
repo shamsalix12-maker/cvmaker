@@ -6,7 +6,7 @@ async function runTest() {
     console.log('🚀 Starting CV Processor V2.0 Test Pipeline...');
 
     const provider: AIProviderName = 'google'; // Default to google for test
-    const model = 'gemini-2.5-flash';
+    const aiModel = 'gemini-2.0-flash';
     const apiKey = process.env.GOOGLE_AI_API_KEY || '';
 
     if (!apiKey) {
@@ -14,7 +14,7 @@ async function runTest() {
         return;
     }
 
-    const processor = new CVProcessorV2(provider, model, apiKey);
+    const processor = new CVProcessorV2(provider, aiModel, apiKey);
 
     const sampleRawText = `
     JANE DOE
