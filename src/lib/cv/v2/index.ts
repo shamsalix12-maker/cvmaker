@@ -155,12 +155,15 @@ export class CVProcessorV2 {
             certifications: (cv.certifications || []).map(c => ({
                 ...c,
                 name: c.name || '',
-                issuer: c.name || '',
+                issuer: (c as any).issuer || '',
             })),
-            languages: [], // V2 doesn't have a separate top-level languages list yet
+            languages: [], // In V2/Llama extraction, these migrate to Skills often
             additional_sections: [
                 ...(cv.publications || []).map(p => ({ id: p.id, title: p.title || 'Publication', content: p.content || '' })),
                 ...(cv.awards || []).map(a => ({ id: a.id, title: a.title || 'Award', content: a.content || '' })),
+                ...(cv.teaching || []).map(t => ({ id: t.id, title: t.title || 'Teaching', content: t.content || '' })),
+                ...(cv.clinical || []).map(c => ({ id: c.id, title: c.title || 'Clinical', content: c.content || '' })),
+                ...(cv.volunteering || []).map(v => ({ id: v.id, title: v.title || 'Volunteering', content: v.content || '' })),
                 ...(cv.other || []).map(o => ({ id: o.id, title: o.title || 'Additional', content: o.content || '' })),
             ],
             metadata: cv.metadata || {},

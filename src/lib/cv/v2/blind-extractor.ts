@@ -115,34 +115,73 @@ export class BlindExtractor {
     }
 
     private normalizeExtractedData(data: any, rawText: string): any {
+        // slugify helper for fuzzy matching
+        const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-0]/g, '');
+
         // Robust key lookup helper
         const get = (obj: any, ...keys: string[]) => {
             if (!obj) return null;
+            const targetSlugs = keys.map(slug);
+
+            // 1. Direct match
             for (const key of keys) {
                 if (obj[key] !== undefined) return obj[key];
-                // Case-insensitive search
-                const foundKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+            }
+
+            // 2. Fuzzy match
+            const objKeys = Object.keys(obj);
+            for (const s of targetSlugs) {
+                const foundKey = objKeys.find(k => slug(k) === s);
                 if (foundKey) return obj[foundKey];
             }
             return null;
         };
 
-        const identityRaw = get(data, 'identity', 'personal_info', 'Identity', 'PersonalInfo') || {};
+        const identityRaw = get(data, 'identity', 'personal_info', 'personal_details', 'Identity', 'PersonalInfo') || {};
 
-        // Ensure IDs exist for all array items
-        const ensureIds = (input: any, prefix: string) => {
+        // Items normalization
+        const ensureIds = (input: any, prefix: string, fieldMap: Record<string, string[]>) => {
             const arr = Array.isArray(input) ? input : (input && typeof input === 'object' && input.items ? input.items : []);
             if (!Array.isArray(arr)) return [];
-            return arr.map((item, idx) => ({
-                ...item,
-                id: item.id || get(item, 'id') || `${prefix}-${idx + 1}`,
-                // Map sub-keys loosely if needed
-                job_title: get(item, 'job_title', 'JobTitle', 'title', 'Title'),
-                company: get(item, 'company', 'Company', 'employer', 'Employer'),
-                degree: get(item, 'degree', 'Degree'),
-                field_of_study: get(item, 'field_of_study', 'FieldOfStudy', 'major', 'Major'),
-                institution: get(item, 'institution', 'Institution', 'university', 'University', 'school', 'School'),
-            }));
+
+            return arr.map((item, idx) => {
+                const normalizedItem: any = {
+                    id: item.id || get(item, 'id') || `${prefix}-${idx + 1}`,
+                };
+
+                // Map all fields according to fieldMap
+                Object.entries(fieldMap).forEach(([targetKey, sourceKeys]) => {
+                    let val = get(item, targetKey, ...sourceKeys);
+
+                    // Array to String conversion (Llama often returns lists for descriptions)
+                    if (Array.isArray(val) && ['description', 'content', 'summary', 'job_title', 'company', 'degree', 'institution', 'location'].includes(targetKey)) {
+                        val = val.join('\n');
+                    }
+
+                    normalizedItem[targetKey] = val;
+
+                    // Special handling for nested arrays (achievements, technologies)
+                    if (targetKey === 'achievements' && !Array.isArray(normalizedItem.achievements)) {
+                        normalizedItem.achievements = normalizedItem.achievements ? [normalizedItem.achievements] : [];
+                    }
+                    if (targetKey === 'technologies' && !Array.isArray(normalizedItem.technologies)) {
+                        normalizedItem.technologies = normalizedItem.technologies ? [normalizedItem.technologies] : [];
+                    }
+                });
+
+                // Special handling for boolean (is_current)
+                const currentVal = normalizedItem.is_current;
+                if (currentVal === undefined || currentVal === null) {
+                    normalizedItem.is_current = false;
+                } else if (typeof currentVal === 'string') {
+                    const s = currentVal.toLowerCase();
+                    normalizedItem.is_current = s.includes('now') || s.includes('present') || s.includes('current');
+                } else {
+                    normalizedItem.is_current = !!currentVal;
+                }
+
+                return normalizedItem;
+            });
         };
 
         const now = new Date().toISOString();
@@ -152,35 +191,85 @@ export class BlindExtractor {
             user_id: get(data, 'user_id') || 'unassigned',
             version: 1,
             identity: {
-                full_name: get(identityRaw, 'full_name', 'fullName', 'name', 'Name', 'FullName') || get(data, 'full_name', 'name'),
+                full_name: get(identityRaw, 'full_name', 'name', 'fullName', 'Name', 'FullName') || get(data, 'full_name', 'name'),
                 email: get(identityRaw, 'email', 'Email'),
-                phone: get(identityRaw, 'phone', 'PhoneNumber', 'Phone'),
-                location: get(identityRaw, 'location', 'Location', 'Address'),
+                phone: get(identityRaw, 'phone', 'phone_number', 'PhoneNumber', 'Phone'),
+                location: get(identityRaw, 'location', 'address', 'Address', 'Location', 'PlaceOfBirth'),
                 linkedin_url: get(identityRaw, 'linkedin_url', 'linkedin', 'LinkedIn'),
                 website_url: get(identityRaw, 'website_url', 'website', 'Website'),
-                summary: get(identityRaw, 'summary', 'Summary', 'Objective'),
+                summary: get(identityRaw, 'summary', 'Summary', 'Objective', 'TechnicalSummary'),
             },
-            experience: ensureIds(get(data, 'experience', 'work_experience', 'Experience', 'WorkExperience'), 'work'),
-            education: ensureIds(get(data, 'education', 'Education'), 'edu'),
+            experience: ensureIds(get(data, 'experience', 'work_experience', 'Experience', 'WorkExperience'), 'work', {
+                job_title: ['job_title', 'title', 'Title', 'JobTitle', 'Position'],
+                company: ['company', 'employer', 'Employer', 'Company', 'Institution'],
+                location: ['location', 'Location', 'Address'],
+                start_date: ['start_date', 'StartDate', 'From', 'start'],
+                end_date: ['end_date', 'EndDate', 'To', 'end'],
+                is_current: ['is_current', 'isCurrent', 'current'],
+                description: ['description', 'Description', 'Duties', 'Responsibilities', 'Content'],
+                achievements: ['achievements', 'Achievements', 'KeyAchievements'],
+            }),
+            education: ensureIds(get(data, 'education', 'Education'), 'edu', {
+                degree: ['degree', 'Degree', 'Qualification'],
+                field_of_study: ['field_of_study', 'fieldOfStudy', 'major', 'Major', 'Subject'],
+                institution: ['institution', 'university', 'University', 'school', 'School', 'Institution'],
+                location: ['location', 'Location'],
+                start_date: ['start_date', 'StartDate', 'From'],
+                end_date: ['end_date', 'EndDate', 'To'],
+                gpa: ['gpa', 'GPA', 'Grade'],
+                description: ['description', 'Description', 'ThesisTitle', 'Thesis'],
+            }),
             skills: Array.isArray(get(data, 'skills', 'Skills'))
                 ? get(data, 'skills', 'Skills').map((s: any) => {
                     if (typeof s === 'string') return s;
                     if (typeof s === 'object' && s !== null) {
-                        const name = get(s, 'name', 'Name', 'title', 'Title');
-                        const desc = get(s, 'description', 'Description', 'details', 'Details');
+                        const name = get(s, 'name', 'Name', 'title', 'Title', 'skill', 'Skill');
+                        const desc = get(s, 'description', 'Description', 'details', 'Details', 'Level');
                         return name && desc ? `${name}: ${desc}` : (name || desc || JSON.stringify(s));
                     }
                     return String(s);
                 })
                 : [],
-            projects: ensureIds(get(data, 'projects', 'Projects'), 'proj'),
-            certifications: ensureIds(get(data, 'certifications', 'Certifications'), 'cert'),
-            publications: ensureIds(get(data, 'publications', 'Publications'), 'pub'),
-            awards: ensureIds(get(data, 'awards', 'Awards'), 'award'),
-            teaching: ensureIds(get(data, 'teaching', 'Teaching'), 'teaching'),
-            clinical: ensureIds(get(data, 'clinical', 'Clinical'), 'clinical'),
-            volunteering: ensureIds(get(data, 'volunteering', 'Volunteering'), 'volunteer'),
-            other: ensureIds(get(data, 'other', 'Other'), 'other'),
+            projects: ensureIds(get(data, 'projects', 'Projects'), 'proj', {
+                name: ['name', 'title', 'Title', 'Name'],
+                description: ['description', 'Description'],
+                technologies: ['technologies', 'Technologies', 'Tools'],
+                url: ['url', 'URL', 'Link'],
+                start_date: ['start_date', 'StartDate'],
+                end_date: ['end_date', 'EndDate'],
+            }),
+            certifications: ensureIds(get(data, 'certifications', 'Certifications'), 'cert', {
+                name: ['name', 'title', 'Name'],
+                issuer: ['issuer', 'organization', 'Issuer'],
+                date_obtained: ['date_obtained', 'date', 'Date'],
+                expiry_date: ['expiry_date', 'expiry'],
+                credential_id: ['credential_id', 'id'],
+                credential_url: ['credential_url', 'url'],
+            }),
+            publications: ensureIds(get(data, 'publications', 'Publications'), 'pub', {
+                title: ['title', 'name', 'Title'],
+                content: ['content', 'description', 'Description', 'Details'],
+            }),
+            awards: ensureIds(get(data, 'awards', 'Awards'), 'award', {
+                title: ['title', 'name', 'Title'],
+                content: ['content', 'description', 'Description', 'Details'],
+            }),
+            teaching: ensureIds(get(data, 'teaching', 'Teaching'), 'teaching', {
+                title: ['title', 'name', 'course', 'Title'],
+                content: ['content', 'description', 'Description', 'Details'],
+            }),
+            clinical: ensureIds(get(data, 'clinical', 'Clinical'), 'clinical', {
+                title: ['title', 'name', 'Title'],
+                content: ['content', 'description', 'Description'],
+            }),
+            volunteering: ensureIds(get(data, 'volunteering', 'Volunteering'), 'volunteer', {
+                title: ['title', 'name', 'Title'],
+                content: ['content', 'description', 'Description'],
+            }),
+            other: ensureIds(get(data, 'other', 'Other'), 'other', {
+                title: ['title', 'name', 'Section'],
+                content: ['content', 'description', 'Description', 'Details'],
+            }),
             raw_text: rawText,
             created_at: now,
             updated_at: now,

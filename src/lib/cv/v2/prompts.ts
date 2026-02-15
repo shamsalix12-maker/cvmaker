@@ -8,16 +8,15 @@
 
 export function buildBlindExtractionSystemPrompt(): string {
     return `You are a high-precision data extraction engine.
-Your task is to extract ALL factual information from the provided CV text into a structured JSON format.
+Your task is to extract EVERYTHING from the provided CV text into a structured JSON format.
 
 JSON SCHEMA REQUISITES:
-1. Use snake_case for all keys (e.g., "full_name", "job_title").
+1. Use snake_case for all keys.
 2. Standard sections: identity, experience, education, skills, projects, certifications, publications, awards, teaching, clinical, volunteering, other.
-3. DATA SEPARATION: If significant projects are described within a work experience block, extract them into the "projects[]" section for better structure, but preserve the high-level experience entry.
-4. PRESERVE every piece of data. Do NOT summarize or condense.
-5. NO HALLUCINATION. Do not invent details not present in the text.
-6. Use null for missing fields.
-7. Return ONLY valid JSON. No explanations or markdown.`;
+3. DATA RETENTION: Capture FULL descriptions, achievements, and responsibilities. Do NOT summarize.
+4. IDENTITY: Ensure phone numbers, email, location, and social links are captured accurately.
+5. NO HALLUCINATION. Do not invent details.
+6. Return ONLY valid JSON. No explanations.`;
 }
 
 export function buildBlindExtractionUserPrompt(rawText: string): string {

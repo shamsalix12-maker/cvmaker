@@ -24,3 +24,4 @@
 - **FINAL STABILITY FIX**: Switched default model to `gemini-flash-latest`, which is fully supported by the new key and provides a high, reliable quota.
 - **GROQ INTEGRATION**: Successfully integrated Groq as an alternative provider and configured the environment with the user's Groq API key.
 - **GROQ STABILIZATION**: Hardened the V2 pipeline (`BlindExtractor`, `Auditor`, `GapGenerator`) to be case-insensitive and format-resilient, directly fixing the "hollow extraction" (0% score) issue caused by Llama-3.3's varied JSON output.
+- **DATA PRESERVATION FIX**: Implemented fuzzy key matching and aggressive normalization in the V2 pipeline. Fixed V2->V1 mapping errors that were excluding entire sections (Teaching, Clinical, etc.) and dropping descriptions. Data quality is now significantly restored and more resilient.
