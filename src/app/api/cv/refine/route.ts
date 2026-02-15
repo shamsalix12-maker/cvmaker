@@ -24,6 +24,7 @@ interface RefineRequestBody {
   instructions?: string;
   additionalText?: string;
   cvLanguage?: string;
+  managerVersion?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       instructions,
       additionalText,
       cvLanguage,
+      managerVersion,
     } = body;
 
     console.log('[API Refine] Request received:', {
@@ -166,7 +168,8 @@ export async function POST(request: NextRequest) {
       resolvedGaps || [],
       instructions,
       additionalText,
-      cvLanguage || 'en'
+      cvLanguage || 'en',
+      managerVersion
     );
 
     console.log('[API Refine] Refinement complete:', {

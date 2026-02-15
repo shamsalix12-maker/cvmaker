@@ -30,13 +30,15 @@ interface UseCVReturn {
     extractFromFile: (
         file: File,
         provider: AIProviderName,
-        model: string
+        model: string,
+        managerVersion?: string
     ) => Promise<CVExtractionResult>;
 
     extractFromText: (
         text: string,
         provider: AIProviderName,
-        model: string
+        model: string,
+        managerVersion?: string
     ) => Promise<CVExtractionResult>;
 
     refineCV: (params: {
@@ -48,6 +50,7 @@ interface UseCVReturn {
         cvLanguage?: string;
         provider?: AIProviderName;
         model?: string;
+        managerVersion?: string;
     }) => Promise<CVExtractionResult>;
 
     applyExtraction: (result: CVExtractionResult) => Promise<void>;
@@ -373,7 +376,8 @@ export function useCV(): UseCVReturn {
     const extractFromFile = useCallback(async (
         file: File,
         provider: AIProviderName,
-        model: string
+        model: string,
+        managerVersion?: string
     ): Promise<CVExtractionResult> => {
         if (!user) throw new Error('Not authenticated');
 
@@ -383,6 +387,7 @@ export function useCV(): UseCVReturn {
         formData.append('file', file);
         formData.append('provider', provider);
         formData.append('model', model);
+        if (managerVersion) formData.append('managerVersion', managerVersion);
 
         const headers: HeadersInit = {};
         if (isDevUser(user.id)) {
@@ -420,7 +425,8 @@ export function useCV(): UseCVReturn {
     const extractFromText = useCallback(async (
         text: string,
         provider: AIProviderName,
-        model: string
+        model: string,
+        managerVersion?: string
     ): Promise<CVExtractionResult> => {
         if (!user) throw new Error('Not authenticated');
 
@@ -430,6 +436,7 @@ export function useCV(): UseCVReturn {
         formData.append('rawText', text);
         formData.append('provider', provider);
         formData.append('model', model);
+        if (managerVersion) formData.append('managerVersion', managerVersion);
 
         const headers: HeadersInit = {};
         if (isDevUser(user.id)) {
@@ -478,6 +485,7 @@ export function useCV(): UseCVReturn {
             cvLanguage?: string;
             provider?: AIProviderName;
             model?: string;
+            managerVersion?: string;
         }
     ): Promise<CVExtractionResult> => {
         const {
@@ -488,7 +496,8 @@ export function useCV(): UseCVReturn {
             additionalText,
             cvLanguage,
             provider,
-            model
+            model,
+            managerVersion
         } = params;
 
         const baseCV = providedCV || cv;
@@ -514,7 +523,8 @@ export function useCV(): UseCVReturn {
                 additionalText,
                 cvLanguage,
                 provider,
-                model
+                model,
+                managerVersion
             })
         });
 

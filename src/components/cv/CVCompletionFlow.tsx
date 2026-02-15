@@ -14,6 +14,7 @@ import {
   CVGapItem,
   CVDomainId,
 } from '@/lib/types/cv-domain.types';
+import { CVManagerVersion } from '@/lib/cv/managers/manager-factory';
 import { DomainSelector } from './DomainSelector';
 import { GapAnalysisDashboard } from './GapAnalysisDashboard';
 import { GapResolutionWizard } from './GapResolutionWizard';
@@ -215,6 +216,7 @@ interface CVCompletionFlowProps {
   aiModel: string;
   onComplete: (cv: Partial<ComprehensiveCV>) => void;
   onDeleteCV?: () => Promise<void>;
+  initialManagerVersion?: string;
   refineCV?: (params: {
     currentCV?: Partial<ComprehensiveCV>;
     resolvedGaps?: { gapId: string; userInput: string }[];
@@ -269,6 +271,7 @@ export function CVCompletionFlow({
   refineCV,
   existingCV,
   initialDomains,
+  initialManagerVersion,
 }: CVCompletionFlowProps) {
   const isRTL = locale === 'fa';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,6 +291,7 @@ export function CVCompletionFlow({
     suggested_improvements: [],
     translations_applied: [],
     cv_language: 'en',
+    manager_version: initialManagerVersion || CVManagerVersion.V1_STABLE,
   });
 
   // Sync with prop if changed
@@ -373,6 +377,7 @@ export function CVCompletionFlow({
         state.selected_domains.length > 0 ? state.selected_domains : ['general']
       ));
       formData.append('cvLanguage', state.cv_language);
+      formData.append('managerVersion', (state as any).manager_version);
 
       const response = await fetch('/api/cv/extract', {
         method: 'POST',
@@ -506,8 +511,8 @@ export function CVCompletionFlow({
           resolvedGaps,
           selectedDomains: state.selected_domains,
           cvLanguage: state.cv_language,
-          provider: aiProvider as any,
-          model: aiModel
+          model: aiModel,
+          managerVersion: (state as any).manager_version
         });
 
         if (result.success && result.cv) {
@@ -819,6 +824,43 @@ export function CVCompletionFlow({
                   ? 'فایل PDF یا DOCX آپلود کنید، یا متن رزومه را مستقیماً وارد کنید'
                   : 'Upload a PDF or DOCX file, or paste your CV text directly'}
               </p>
+            </div>
+
+            {/* Engine Version Selection (Dev Mode / Test) */}
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⚙️</span>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      {locale === 'fa' ? 'نسخه موتور استخراج' : 'Extraction Engine Version'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {locale === 'fa' ? 'انتخاب بین نسخه پایدار و آزمایشی' : 'Select between stable and experimental engine'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V1_STABLE }))}
+                    className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V1_STABLE
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                  >
+                    {locale === 'fa' ? 'پایدار (V1)' : 'Stable (V1)'}
+                  </button>
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V2_EXPERIMENTAL }))}
+                    className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V2_EXPERIMENTAL
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                  >
+                    {locale === 'fa' ? 'آزمایشی (V2)' : 'Experimental (V2)'}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* File upload area */}

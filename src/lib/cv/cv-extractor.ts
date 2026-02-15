@@ -10,6 +10,7 @@ import {
   CVExtractionRequest,
   ComprehensiveCV,
   AIProviderName,
+  CVFieldStatus,
 } from '@/lib/types';
 import {
   CVGapAnalysis,
@@ -42,11 +43,20 @@ import {
 // Enhanced Types
 // ═══════════════════════════════════════════
 
+import { CVManagerFactory, CVManagerVersion } from './managers/manager-factory';
+import { CVRefinementRequest } from './managers/types';
+
+// ═══════════════════════════════════════════
+// Enhanced Types (Kept for compatibility)
+// ═══════════════════════════════════════════
+
 /**
  * نتیجه استخراج پیشرفته شامل Gap Analysis
  * سازگار با CVExtractionResult قبلی + فیلدهای اضافی
  */
-export interface EnhancedCVExtractionResult extends CVExtractionResult {
+export interface EnhancedCVExtractionResult extends Omit<CVExtractionResult, 'cv' | 'fieldStatuses'> {
+  cv: Partial<ComprehensiveCV> | null;
+  fieldStatuses: CVFieldStatus[];
   /** تحلیل نواقص */
   gapAnalysis: CVGapAnalysis | null;
   /** حوزه‌های شناسایی‌شده از متن */
@@ -66,215 +76,50 @@ export interface EnhancedCVExtractionResult extends CVExtractionResult {
   translationsApplied?: TranslationApplied[];
   /** زبان اصلی CV */
   cvLanguage?: string;
+  /** نسخه منیجر استفاده شده */
+  managerVersion?: string;
 }
 
 /**
  * درخواست استخراج پیشرفته شامل حوزه‌ها
- * سازگار با CVExtractionRequest قبلی + فیلد اضافی
  */
 export interface EnhancedCVExtractionRequest extends CVExtractionRequest {
   selectedDomains: CVDomainId[];
-  cvLanguage?: string;  // زبان اصلی CV - همه محتوا به این زبان خواهد بود
+  cvLanguage?: string;
+  managerVersion?: string;
 }
 
 // ═══════════════════════════════════════════
-// تابع اصلی استخراج
+// تابع اصلی استخراج (نسخه مدیریت شده)
 // ═══════════════════════════════════════════
 
 /**
- * استخراج CV با AI - نسخه Domain-Aware
- *
- * سازگاری:
- * - اگر request از نوع CVExtractionRequest قبلی باشد → حوزه general استفاده می‌شود
- * - اگر request از نوع EnhancedCVExtractionRequest باشد → حوزه‌های انتخابی
- * - خروجی EnhancedCVExtractionResult است که extends CVExtractionResult می‌کند
+ * استخراج CV با AI - با قابلیت سوئیچ بین منیجرهای مختلف (A/B Testing)
  */
 export async function extractCVWithAI(
   request: EnhancedCVExtractionRequest | CVExtractionRequest,
   apiKey: string
 ): Promise<EnhancedCVExtractionResult> {
-  const { rawText, aiProvider, aiModel } = request;
+  // انتخاب نسخه منیجر (پایدار یا آزمایشی)
+  const version = (request as any).managerVersion || CVManagerVersion.V1_STABLE;
+  const manager = CVManagerFactory.getManager(version);
 
-  // تشخیص حوزه‌ها: اگر در request بود استفاده کن، وگرنه general
-  const selectedDomains: CVDomainId[] =
-    ('selectedDomains' in request && Array.isArray(request.selectedDomains) && request.selectedDomains.length > 0)
-      ? request.selectedDomains
-      : ['general'];
+  console.log(`[CV Extractor] Delegating to manager: ${manager.id} (${manager.version})`);
 
-  // تشخیص زبان CV: اگر در request بود استفاده کن، وگرنه en
-  const cvLanguage: string =
-    ('cvLanguage' in request && typeof request.cvLanguage === 'string')
-      ? request.cvLanguage
-      : 'en';
+  const result = await manager.extract({ ...request, apiKey } as any);
 
-  console.log('[CV Extractor] Starting domain-aware extraction', {
-    provider: aiProvider,
-    model: aiModel,
-    textLength: rawText?.length || 0,
-    domains: selectedDomains,
-    cvLanguage,
-    apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + '...' : 'NONE',
-  });
-
-  // تشخیص خودکار حوزه‌ها از متن (برای مقایسه و اطلاع‌رسانی)
-  const detectedDomains = detectDomains(rawText || '');
-  console.log('[CV Extractor] Auto-detected domains:', detectedDomains.slice(0, 5));
-
-  try {
-    const provider = getAIProvider(aiProvider);
-    console.log(`[CV Extractor] Provider obtained: ${provider.providerName}`);
-
-    const config: AIProviderConfig = {
-      apiKey,
-      temperature: 0,
-      maxTokens: 32768,  // افزایش برای جلوگیری از truncation
-    };
-
-    // ساخت پرامپت‌های Domain-Aware با زبان CV
-    const systemPrompt = buildExtractionSystemPrompt(selectedDomains, cvLanguage);
-    const userPrompt = buildExtractionUserPrompt(rawText, selectedDomains);
-
-    console.log('[CV Extractor] Prompts built', {
-      systemLength: systemPrompt.length,
-      userLength: userPrompt.length,
-      totalTokensEstimate: Math.round((systemPrompt.length + userPrompt.length) / 4),
-      maxTokens: config.maxTokens,
-    });
-
-    const options: AICompletionOptions = {
-      model: aiModel,
-      messages: [
-        {
-          id: 'sys-extract',
-          role: 'system',
-          content: systemPrompt,
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 'usr-extract',
-          role: 'user',
-          content: userPrompt,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-      jsonMode: true,
-    };
-
-    console.log('[CV Extractor] Calling AI provider...');
-    const response = await provider.complete(config, options);
-
-    console.log('[CV Extractor] Response received', {
-      length: response?.length || 0,
-      preview: response ? response.substring(0, 200) + '...' : 'EMPTY',
-    });
-
-    if (!response) {
-      throw new Error('AI provider returned an empty response');
-    }
-
-    // پارس JSON با repair پیشرفته
-    console.log('[CV Extractor] Parsing JSON response...');
-    let parsed = safeParseJSON(response);
-
-    // Fallback
-    if (!parsed) {
-      console.log('[CV Extractor] Full parse failed, trying partial extraction...');
-      parsed = extractPartialData(response);
-    }
-
-    if (!parsed) {
-      console.error('[CV Extractor] JSON parse failed. Raw head:', response.substring(0, 500));
-      return buildErrorResult(
-        rawText, aiProvider, aiModel, detectedDomains,
-        'AI returned invalid JSON. Please try again or use a different model.'
-      );
-    }
-
-    console.log('[CV Extractor] JSON parsed. Top keys:', Object.keys(parsed));
-    console.log('[CV Extractor] gap_analysis present:', !!parsed.gap_analysis);
-    console.log('[CV Extractor] gaps count:', parsed.gap_analysis?.gaps?.length || 0);
-
-    // تبدیل به ساختارهای استاندارد
-    const cv = transformExtractedData(parsed, rawText);
-    const aiGapAnalysis = transformGapAnalysis(parsed, selectedDomains);
-    const comprehensiveGaps = buildComprehensiveGaps(
-      cv, selectedDomains, aiGapAnalysis?.gaps || []
-    );
-
-    const gapAnalysis: CVGapAnalysis = {
-      selected_domains: selectedDomains,
-      detected_domains: aiGapAnalysis?.detected_domains || [],
-      overall_score: aiGapAnalysis?.overall_score || 0,
-      domain_scores: aiGapAnalysis?.domain_scores || {},
-      gaps: comprehensiveGaps,
-      strengths: aiGapAnalysis?.strengths || [],
-      analysis_summary: aiGapAnalysis?.analysis_summary || '',
-      general_recommendations: aiGapAnalysis?.general_recommendations || [],
-    };
-    const metadata = transformMetadata(parsed);
-
-    // Validation
-    const validation = validateExtraction(cv, rawText, cvLanguage);
-    console.log('[CV Extractor] Validation:', {
-      completeness: validation.completeness,
-      warnings: validation.warnings,
-      languageViolations: validation.languageViolations,
-    });
-
-    // اعتبارسنجی پایه
-    const fieldStatuses = validateExtractedCV(cv);
-    const completionPercentage = getCompletionPercentage(fieldStatuses);
-
-    console.log('[CV Extractor] Extraction complete', {
-      name: cv.personal_info?.full_name,
-      workExp: cv.work_experience?.length || 0,
-      education: cv.education?.length || 0,
-      skills: cv.skills?.length || 0,
-      certs: cv.certifications?.length || 0,
-      langs: cv.languages?.length || 0,
-      projects: cv.projects?.length || 0,
-      gapCount: gapAnalysis?.gaps?.length || 0,
-      strengthCount: gapAnalysis?.strengths?.length || 0,
-      overallScore: gapAnalysis?.overall_score || 0,
-      completionPercentage,
-      validationCompleteness: validation.completeness,
-    });
-
-    return {
-      success: true,
-      cv,
-      fieldStatuses,
-      confidence: metadata?.confidence || validation.completeness,
-      rawText,
-      aiProvider,
-      aiModel,
-      extractionNotes: metadata?.notes || validation.warnings.join('; '),
-      gapAnalysis,
-      detectedDomains,
-      metadata,
-      suggestedImprovements: [],
-      translationsApplied: [],
-      cvLanguage,
-    };
-  } catch (error: any) {
-    console.error('[CV Extractor] Critical error:', error);
-    console.error('[CV Extractor] Stack:', error.stack);
-    return buildErrorResult(
-      rawText, aiProvider, aiModel, detectedDomains,
-      `Extraction failed: ${error.message || 'Unknown AI error'}`
-    );
-  }
+  return {
+    ...result,
+    managerVersion: manager.version
+  };
 }
 
 // ═══════════════════════════════════════════
-// تابع اصلاح (Refinement)
+// تابع اصلاح (Refinement - نسخه مدیریت شده)
 // ═══════════════════════════════════════════
 
 /**
- * اصلاح CV با اطلاعات جدید از کاربر (رفع نواقص)
- *
- * سیگنچر جدید شامل resolvedGaps و selectedDomains
- * اگر بدون این پارامترها فراخوانی شود، مانند قبل کار می‌کند
+ * اصلاح CV با اطلاعات جدید از کاربر
  */
 export async function refineCVWithAI(
   currentCV: Partial<ComprehensiveCV>,
@@ -285,272 +130,32 @@ export async function refineCVWithAI(
   resolvedGaps?: { gapId: string; userInput: string }[],
   instructions?: string,
   additionalText?: string,
-  cvLanguage?: string
+  cvLanguage?: string,
+  managerVersion: string = CVManagerVersion.V1_STABLE
 ): Promise<EnhancedCVExtractionResult> {
-  const domains = selectedDomains && selectedDomains.length > 0
-    ? selectedDomains
-    : ['general' as CVDomainId];
+  // انتخاب نسخه منیجر
+  const manager = CVManagerFactory.getManager(managerVersion);
 
-  const gaps = resolvedGaps || [];
-  const lang = cvLanguage || 'en';
+  console.log(`[CV Refiner] Delegating to manager: ${manager.id} (${manager.version})`);
 
-  console.log('[CV Refiner] Starting refinement', {
+  const refinementRequest: CVRefinementRequest & { apiKey: string } = {
+    currentCV,
+    resolvedGaps: resolvedGaps || [],
+    additionalText,
+    instructions,
+    selectedDomains: selectedDomains || [],
+    cvLanguage,
     provider: aiProvider,
     model: aiModel,
-    domains,
-    resolvedGapCount: gaps.length,
-    hasInstructions: !!instructions,
-    hasAdditionalText: !!additionalText,
-    cvLanguage: lang,
-  });
+    apiKey
+  };
 
-  const detectedDomains = detectDomains(currentCV.raw_text || '');
+  const result = await manager.refine(refinementRequest);
 
-  try {
-    const provider = getAIProvider(aiProvider as AIProviderName);
-
-    const config: AIProviderConfig = {
-      apiKey,
-      temperature: 0,
-      maxTokens: 32768,
-    };
-
-    const systemPrompt = buildRefinementSystemPrompt(domains, lang);
-    const userPrompt = buildRefinementUserPrompt(
-      currentCV,
-      gaps,
-      additionalText,
-      instructions,
-      lang
-    );
-
-    console.log('[CV Refiner] Prompts built', {
-      systemLength: systemPrompt.length,
-      userLength: userPrompt.length,
-    });
-
-    console.log('[REFINE-DEBUG-2] Prompt length:', userPrompt.length);
-    console.log('[REFINE-DEBUG-3] Prompt preview:', userPrompt.substring(0, 500));
-
-    const options: AICompletionOptions = {
-      model: aiModel,
-      messages: [
-        {
-          id: 'sys-refine',
-          role: 'system',
-          content: systemPrompt,
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 'usr-refine',
-          role: 'user',
-          content: userPrompt,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-      jsonMode: true,
-    };
-
-    console.log('[CV Refiner] Calling AI provider...');
-    const response = await provider.complete(config, options);
-
-    if (response) {
-      console.log('[REFINE-DEBUG-4] Raw AI response length:', response.length);
-      console.log('[REFINE-DEBUG-5] Raw AI response preview:', response.substring(0, 500));
-    }
-    const parsed = provider.parseJsonResponse<any>(response);
-
-    if (!parsed) {
-      console.error('[CV Refiner] JSON parse failed');
-      throw new Error('Failed to parse AI refinement response as JSON');
-    }
-
-    console.log('[CV Refiner] Response parsed. Keys:', Object.keys(parsed));
-
-    const rawCV = transformExtractedData(parsed, additionalText || currentCV.raw_text);
-
-    console.log('[DEBUG-GAP-4] After transform - checking if gaps were integrated:');
-    console.log('[DEBUG-GAP-4a] rawCV.personal_info.summary length:',
-      rawCV.personal_info?.summary?.length);
-    console.log('[DEBUG-GAP-4b] rawCV.work_experience:',
-      rawCV.work_experience?.map((w, i) => ({
-        idx: i,
-        company: (w as any).company?.substring(0, 30),
-        descLen: (w as any).description?.length || 0,
-        achCount: (w as any).achievements?.length || 0
-      })));
-    console.log('[DEBUG-GAP-4c] rawCV.certifications count:',
-      rawCV.certifications?.length);
-    console.log('[DEBUG-GAP-4d] rawCV.projects count:',
-      rawCV.projects?.length);
-
-
-    // ═══════════════════════════════════════════════════════
-    // استفاده از safeRefineCV برای جلوگیری از حذف داده‌ها
-    // ═══════════════════════════════════════════════════════
-    const hasGaps = resolvedGaps && resolvedGaps.length > 0;
-    let cv: Partial<ComprehensiveCV>;
-
-    if (hasGaps) {
-      console.log('[CV Refiner] Gap mode: validating AI output');
-      cv = { ...rawCV };
-
-      const checks = [
-        { key: 'work_experience', label: 'Work' },
-        { key: 'education', label: 'Education' },
-        { key: 'languages', label: 'Languages' },
-        { key: 'certifications', label: 'Certs' },
-        { key: 'projects', label: 'Projects' },
-      ];
-
-      for (const check of checks) {
-        const origCount = (currentCV as any)[check.key]?.length || 0;
-        const newCount = (cv as any)[check.key]?.length || 0;
-        if (newCount < origCount) {
-          console.warn('[CV Refiner] ' + check.label + ' decreased, restoring');
-          (cv as any)[check.key] = (currentCV as any)[check.key];
-        }
-        if (!(cv as any)[check.key] && (currentCV as any)[check.key]) {
-          (cv as any)[check.key] = (currentCV as any)[check.key];
-        }
-      }
-
-      const origSkills = Array.isArray(currentCV.skills) ? currentCV.skills.length : 0;
-      const newSkills = Array.isArray(cv.skills) ? cv.skills.length : 0;
-      if (newSkills < origSkills) {
-        cv.skills = currentCV.skills;
-      }
-
-      if (cv.personal_info && currentCV.personal_info) {
-        cv.personal_info.full_name = currentCV.personal_info.full_name || cv.personal_info.full_name;
-        cv.personal_info.email = currentCV.personal_info.email || cv.personal_info.email;
-        cv.personal_info.phone = currentCV.personal_info.phone || cv.personal_info.phone;
-      }
-
-      cv.raw_text = currentCV.raw_text || cv.raw_text;
-
-      console.log('[CV Refiner] Validation done:', {
-        work: cv.work_experience?.length,
-        edu: cv.education?.length,
-        skills: Array.isArray(cv.skills) ? cv.skills.length : 0,
-        summaryLen: cv.personal_info?.summary?.length
-      });
-
-    } else {
-      cv = safeRefineCV(currentCV, rawCV);
-    }
-
-    console.log('[DEBUG-GAP-5] After safeRefineCV - final state:');
-    console.log('[DEBUG-GAP-5a] cv.personal_info.summary length:',
-      cv.personal_info?.summary?.length);
-    console.log('[DEBUG-GAP-5b] cv.work_experience:',
-      cv.work_experience?.map((w, i) => ({
-        idx: i,
-        id: (w as any).id,
-        company: (w as any).company?.substring(0, 30),
-        descLen: (w as any).description?.length || 0,
-        achCount: (w as any).achievements?.length || 0
-      })));
-    console.log('[DEBUG-GAP-5c] cv.certifications count:',
-      cv.certifications?.length);
-    console.log('[DEBUG-GAP-5d] cv.projects count:',
-      cv.projects?.length);
-
-    // CRITICAL: Compare what changed
-    console.log('[DEBUG-GAP-6] COMPARISON:', {
-      personalInfoChanged:
-        JSON.stringify(currentCV.personal_info) !==
-        JSON.stringify(cv.personal_info),
-      workCountBefore: currentCV.work_experience?.length,
-      workCountAfter: cv.work_experience?.length,
-      certsCountBefore: currentCV.certifications?.length,
-      certsCountAfter: cv.certifications?.length,
-      projectsCountBefore: currentCV.projects?.length,
-      projectsCountAfter: cv.projects?.length,
-      skillsCountBefore: Array.isArray(currentCV.skills) ?
-        currentCV.skills.length : 0,
-      skillsCountAfter: Array.isArray(cv.skills) ?
-        cv.skills.length : 0,
-    });
-
-
-    // Validation نهایی
-    const originalCounts = {
-      work: currentCV.work_experience?.length || 0,
-      edu: currentCV.education?.length || 0,
-      skills: Array.isArray(currentCV.skills) ? currentCV.skills.length : 0,
-    };
-    const refinedCounts = {
-      work: cv.work_experience?.length || 0,
-      edu: cv.education?.length || 0,
-      skills: Array.isArray(cv.skills) ? cv.skills.length : 0,
-    };
-
-    console.log('[CV Refiner] Data counts:', { original: originalCounts, refined: refinedCounts });
-
-    if (refinedCounts.work < originalCounts.work ||
-      refinedCounts.edu < originalCounts.edu ||
-      refinedCounts.skills < originalCounts.skills) {
-      console.warn('[CV Refiner] ⚠️ Data loss detected - this should not happen with safeRefineCV!');
-    }
-
-    const aiGapAnalysis = transformGapAnalysis(parsed, domains);
-    const comprehensiveGaps = buildComprehensiveGaps(
-      cv, domains, aiGapAnalysis?.gaps || []
-    );
-
-    const gapAnalysis: CVGapAnalysis = {
-      selected_domains: domains,
-      detected_domains: aiGapAnalysis?.detected_domains || [],
-      overall_score: aiGapAnalysis?.overall_score || 0,
-      domain_scores: aiGapAnalysis?.domain_scores || {},
-      gaps: comprehensiveGaps,
-      strengths: aiGapAnalysis?.strengths || [],
-      analysis_summary: aiGapAnalysis?.analysis_summary || '',
-      general_recommendations: aiGapAnalysis?.general_recommendations || [],
-    };
-    const metadata = transformMetadata(parsed);
-    const fieldStatuses = validateExtractedCV(cv);
-    const completionPercentage = getCompletionPercentage(fieldStatuses);
-
-    // استخراج پیشنهادهای بهبود و ترجمه‌ها
-    const suggestedImprovements = transformSuggestedImprovements(parsed.suggested_improvements);
-    const translationsApplied = transformTranslationsApplied(parsed.translations_applied);
-
-    console.log('[CV Refiner] Refinement complete', {
-      remainingGaps: gapAnalysis?.gaps?.filter(g => !g.is_resolved && !g.is_skipped).length || 0,
-      overallScore: gapAnalysis?.overall_score || 0,
-      suggestedImprovements: suggestedImprovements.length,
-      translationsApplied: translationsApplied.length,
-    });
-
-    return {
-      success: true,
-      cv,
-      fieldStatuses,
-      confidence: metadata?.confidence || completionPercentage,
-      rawText: additionalText || currentCV.raw_text || '',
-      aiProvider: aiProvider as AIProviderName,
-      aiModel,
-      extractionNotes: metadata?.notes || '',
-      gapAnalysis,
-      detectedDomains,
-      metadata,
-      suggestedImprovements,
-      translationsApplied,
-      cvLanguage: lang,
-    };
-  } catch (error: any) {
-    console.error('[CV Refiner] Error:', error);
-    return buildErrorResult(
-      additionalText || currentCV.raw_text || '',
-      aiProvider as AIProviderName,
-      aiModel,
-      detectedDomains,
-      `Refinement failed: ${error.message}`,
-      currentCV
-    );
-  }
+  return {
+    ...result,
+    managerVersion: manager.version
+  };
 }
 
 // ═══════════════════════════════════════════

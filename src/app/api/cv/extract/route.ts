@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     const model = formData.get('model') as string;
     const domainsRaw = formData.get('domains') as string | null;
     const cvLanguage = (formData.get('cvLanguage') as string) || 'en';
+    const managerVersion = formData.get('managerVersion') as string | null;
 
     // API key sources
     const directApiKey = request.headers.get('x-api-key-bypass');
@@ -187,6 +188,7 @@ export async function POST(request: NextRequest) {
       aiModel: model,
       selectedDomains,
       cvLanguage,
+      managerVersion: managerVersion || undefined,
     };
 
     const result = await extractCVWithAI(extractionRequest, apiKey);
