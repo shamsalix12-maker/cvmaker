@@ -294,6 +294,7 @@ export function CVCompletionFlow({
     translations_applied: [],
     cv_language: 'en',
     manager_version: initialManagerVersion || CVManagerVersion.V1_STABLE,
+    error_details: null,
   });
 
   // Sync with prop if changed
@@ -391,11 +392,11 @@ export function CVCompletionFlow({
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(
-          result.error ||
-          result.extractionNotes ||
-          'Extraction failed. Please try again.'
-        );
+        const errorMsg = result.error || result.extractionNotes || 'Extraction failed';
+        const error: any = new Error(errorMsg);
+        error.details = result.details;
+        error.stack = result.stack;
+        throw error;
       }
 
       const gapAnalysis: CVGapAnalysis | null = result.gapAnalysis || null;
@@ -423,7 +424,15 @@ export function CVCompletionFlow({
     } catch (err: unknown) {
       console.error('[CVFlow] Extraction error:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      goToStep('upload');
+
+      // Keep details if available (from our new API response)
+      if (err instanceof Error && (err as any).details) {
+        setState(prev => ({ ...prev, error_details: (err as any).details }));
+      }
+
+      // Stay on ai_extraction step to show the error there, or go to upload but with persistence
+      // For now, let's stay on ai_extraction but with an error state
+      setState(prev => ({ ...prev, current_step: 'upload' }));
     } finally {
       setIsLoading(false);
     }
@@ -724,15 +733,26 @@ export function CVCompletionFlow({
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Global error */}
-        {error && state.current_step !== 'ai_extraction' && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-red-500 flex-shrink-0 mt-0.5">⚠️</span>
-              <div>
-                <p className="text-sm text-red-700 dark:text-red-400 font-medium">
-                  {locale === 'fa' ? 'خطا' : 'Error'}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm text-red-700 dark:text-red-400 font-bold">
+                  {locale === 'fa' ? 'خطا در عملیات' : 'Operation Error'}
                 </p>
-                <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">{error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1 font-medium">{error}</p>
+                {(state as any).error_details && (
+                  <pre className="mt-2 p-2 bg-black/5 dark:bg-white/5 rounded text-[10px] overflow-auto max-h-32 font-mono text-red-800 dark:text-red-300">
+                    {(state as any).error_details}
+                  </pre>
+                )}
+                <button
+                  onClick={() => { setError(null); setState(prev => ({ ...prev, error_details: null })); }}
+                  className="mt-3 text-xs text-red-600 dark:text-red-400 underline hover:no-underline"
+                >
+                  {locale === 'fa' ? 'متوجه شدم' : 'I understand'}
+                </button>
               </div>
             </div>
           </div>

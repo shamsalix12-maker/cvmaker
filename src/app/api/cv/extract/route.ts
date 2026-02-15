@@ -207,14 +207,21 @@ export async function POST(request: NextRequest) {
           rawText: textToProcess,
         };
 
-        console.log('[API Extract] V2.0 Response mapped and sending');
+        console.log('[API Extract] V2.0 success! Mapping confirmed.', {
+          hasCV: !!mappedResponse.cv,
+          hasGaps: !!mappedResponse.gapAnalysis,
+          gapCount: mappedResponse.gapAnalysis?.gaps?.length || 0
+        });
+
         return NextResponse.json(mappedResponse);
       } catch (v2Error: any) {
         console.error('[API Extract] V2.0 CRITICAL EXCEPTION:', v2Error);
+        console.error('[API Extract] Stack trace:', v2Error.stack);
         return NextResponse.json({
           success: false,
-          error: 'Critical failure in V2 pipeline',
-          details: v2Error.message
+          error: `Critical failure in V2 pipeline: ${v2Error.message}`,
+          details: v2Error.message,
+          stack: v2Error.stack
         }, { status: 500 });
       }
     }

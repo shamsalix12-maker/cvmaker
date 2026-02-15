@@ -117,15 +117,44 @@ export class CVProcessorV2 {
         return {
             ...cv,
             personal_info: {
-                full_name: cv.identity.full_name,
-                email: cv.identity.email,
-                phone: cv.identity.phone,
-                location: cv.identity.location,
-                linkedin_url: cv.identity.linkedin_url,
-                summary: cv.identity.summary,
+                full_name: cv.identity?.full_name || '',
+                email: cv.identity?.email || '',
+                phone: cv.identity?.phone || '',
+                location: cv.identity?.location || '',
+                linkedin_url: cv.identity?.linkedin_url || '',
+                website_url: cv.identity?.website_url || '',
+                summary: cv.identity?.summary || '',
             },
-            work_experience: cv.experience,
-            // education, skills, projects, certifications are the same
+            work_experience: (cv.experience || []).map(exp => ({
+                ...exp,
+                description: exp.description || '',
+                achievements: exp.achievements || [],
+            })),
+            education: (cv.education || []).map(edu => ({
+                ...edu,
+                degree: edu.degree || '',
+                field_of_study: edu.field_of_study || '',
+                institution: edu.institution || '',
+                description: edu.description || '',
+            })),
+            skills: cv.skills || [],
+            projects: (cv.projects || []).map(p => ({
+                ...p,
+                name: p.name || '',
+                description: p.description || '',
+            })),
+            certifications: (cv.certifications || []).map(c => ({
+                ...c,
+                name: c.name || '',
+                issuer: c.name || '',
+            })),
+            languages: [], // V2 doesn't have a separate top-level languages list yet
+            additional_sections: [
+                ...(cv.publications || []).map(p => ({ id: p.id, title: p.title || 'Publication', content: p.content || '' })),
+                ...(cv.awards || []).map(a => ({ id: a.id, title: a.title || 'Award', content: a.content || '' })),
+                ...(cv.other || []).map(o => ({ id: o.id, title: o.title || 'Additional', content: o.content || '' })),
+            ],
+            metadata: cv.metadata || {},
         };
     }
 
