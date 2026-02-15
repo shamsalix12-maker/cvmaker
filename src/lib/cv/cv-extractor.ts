@@ -374,7 +374,57 @@ export async function refineCVWithAI(
     // ═══════════════════════════════════════════════════════
     // استفاده از safeRefineCV برای جلوگیری از حذف داده‌ها
     // ═══════════════════════════════════════════════════════
-    const cv = safeRefineCV(currentCV, rawCV);
+    const hasGaps = resolvedGaps && resolvedGaps.length > 0;
+    let cv: Partial<ComprehensiveCV>;
+
+    if (hasGaps) {
+      console.log('[CV Refiner] Gap mode: validating AI output');
+      cv = { ...rawCV };
+
+      const checks = [
+        { key: 'work_experience', label: 'Work' },
+        { key: 'education', label: 'Education' },
+        { key: 'languages', label: 'Languages' },
+        { key: 'certifications', label: 'Certs' },
+        { key: 'projects', label: 'Projects' },
+      ];
+
+      for (const check of checks) {
+        const origCount = (currentCV as any)[check.key]?.length || 0;
+        const newCount = (cv as any)[check.key]?.length || 0;
+        if (newCount < origCount) {
+          console.warn('[CV Refiner] ' + check.label + ' decreased, restoring');
+          (cv as any)[check.key] = (currentCV as any)[check.key];
+        }
+        if (!(cv as any)[check.key] && (currentCV as any)[check.key]) {
+          (cv as any)[check.key] = (currentCV as any)[check.key];
+        }
+      }
+
+      const origSkills = Array.isArray(currentCV.skills) ? currentCV.skills.length : 0;
+      const newSkills = Array.isArray(cv.skills) ? cv.skills.length : 0;
+      if (newSkills < origSkills) {
+        cv.skills = currentCV.skills;
+      }
+
+      if (cv.personal_info && currentCV.personal_info) {
+        cv.personal_info.full_name = currentCV.personal_info.full_name || cv.personal_info.full_name;
+        cv.personal_info.email = currentCV.personal_info.email || cv.personal_info.email;
+        cv.personal_info.phone = currentCV.personal_info.phone || cv.personal_info.phone;
+      }
+
+      cv.raw_text = currentCV.raw_text || cv.raw_text;
+
+      console.log('[CV Refiner] Validation done:', {
+        work: cv.work_experience?.length,
+        edu: cv.education?.length,
+        skills: Array.isArray(cv.skills) ? cv.skills.length : 0,
+        summaryLen: cv.personal_info?.summary?.length
+      });
+
+    } else {
+      cv = safeRefineCV(currentCV, rawCV);
+    }
 
     console.log('[DEBUG-GAP-5] After safeRefineCV - final state:');
     console.log('[DEBUG-GAP-5a] cv.personal_info.summary length:',
