@@ -7,16 +7,19 @@ import { AIProvider } from './ai-provider';
 import { OpenAIProvider } from './openai-provider';
 import { AnthropicProvider } from './anthropic-provider';
 import { GoogleAIProvider } from './google-ai-provider';
+import { GroqProvider } from './groq-provider';
 
 // Singleton instances
 const openAIProvider = new OpenAIProvider();
 const anthropicProvider = new AnthropicProvider();
 const googleAIProvider = new GoogleAIProvider();
+const groqProvider = new GroqProvider();
 
 const providers: Record<AIProviderName, AIProvider> = {
     openai: openAIProvider,
     anthropic: anthropicProvider,
     google: googleAIProvider,
+    groq: groqProvider,
 };
 
 export function getAIProvider(name: AIProviderName): AIProvider {

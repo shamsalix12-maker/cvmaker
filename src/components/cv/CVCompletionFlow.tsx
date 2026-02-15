@@ -757,11 +757,36 @@ export function CVCompletionFlow({
                   </pre>
                 )}
                 <button
-                  onClick={() => { setError(null); setState(prev => ({ ...prev, error_details: null })); }}
-                  className="mt-3 text-xs text-red-600 dark:text-red-400 underline hover:no-underline"
+                  onClick={() => { setError(null); setState(prev => ({ ...prev, error_details: null, is_hollow: false })); }}
+                  className="mt-3 text-xs text-red-600 dark:text-red-400 underline hover:no-underline font-bold"
                 >
-                  {locale === 'fa' ? 'متوجه شدم' : 'I understand'}
+                  {locale === 'fa' ? 'متوجه شدم (بستن)' : 'I understand (Close)'}
                 </button>
+
+                {state.is_hollow && (
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, show_debug: !prev.show_debug }))}
+                    className="mt-3 ml-4 text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline font-bold"
+                  >
+                    {state.show_debug
+                      ? (locale === 'fa' ? 'مخفی‌سازی اطلاعات فنی' : 'Hide Debug Info')
+                      : (locale === 'fa' ? 'نمایش اطلاعات فنی (دیباگ)' : 'Show Technical Debug Info')
+                    }
+                  </button>
+                )}
+
+                {state.show_debug && state.debug_info && (
+                  <div className="mt-4 space-y-4 border-t border-red-200 dark:border-red-800 pt-4">
+                    {Object.entries(state.debug_info).map(([step, raw]: [string, any]) => (
+                      <div key={step} className="overflow-hidden">
+                        <p className="text-[10px] font-bold uppercase text-gray-500 mb-1">{step} Raw Response</p>
+                        <pre className="p-2 bg-black text-green-400 text-[9px] overflow-auto max-h-64 rounded font-mono border border-gray-800 leading-tight">
+                          {typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

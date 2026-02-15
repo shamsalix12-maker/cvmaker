@@ -40,8 +40,8 @@ export default function CVManagerPage() {
     }
   };
 
-  const aiProvider = 'google';
-  const aiModel = 'gemini-flash-latest';
+  const aiProvider = 'groq';
+  const aiModel = 'llama-3.3-70b-versatile';
 
   return (
     <AuthGuard>

@@ -152,7 +152,7 @@ export interface PromptCategory {
 // AI TYPES
 // ─────────────────────────────────────────────────────────────────
 
-export type AIProviderName = 'openai' | 'anthropic' | 'google';
+export type AIProviderName = 'openai' | 'anthropic' | 'google' | 'groq';
 
 export interface AIModel {
     model_id: string;

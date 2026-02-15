@@ -121,6 +121,15 @@ export async function POST(request: NextRequest) {
             const errorMsg = `No API key found for ${provider}. Please add one in Settings.`;
             return NextResponse.json({ error: errorMsg }, { status: 400 });
           }
+        } else if (provider === 'groq') {
+          const envKey = process.env.GROQ_API_KEY;
+          if (envKey) {
+            console.log('[API Extract] Using GROQ_API_KEY from environment');
+            apiKey = envKey;
+          } else {
+            const errorMsg = `No API key found for ${provider}. Please add one in Settings.`;
+            return NextResponse.json({ error: errorMsg }, { status: 400 });
+          }
         } else {
           const errorMsg = `No API key found for ${provider}. Please add one in Settings.`;
           return NextResponse.json({ error: errorMsg }, { status: 400 });
