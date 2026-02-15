@@ -1437,45 +1437,30 @@ function buildComprehensiveGaps(
     section: string,
     field: string,
     label: string,
-    priority: 'critical' | 'high' | 'medium' | 'low',
+    priority: 'critical' | 'important' | 'recommended' | 'optional',
     suggestion: string,
-    gapType: 'missing' | 'incomplete' | 'improvement'
+    category: GapCategory
   ) => {
     const id = 'gap-' + idx++;
     const key = section + '|' + field;
     if (usedIds.has(key)) return;
     usedIds.add(key);
 
-    // Map user's priority to severity
-    const severityMap: Record<string, GapSeverity> = {
-      critical: 'critical',
-      high: 'important',
-      medium: 'recommended',
-      low: 'optional',
-    };
-
-    // Map user's gapType to category
-    const categoryMap: Record<string, GapCategory> = {
-      missing: 'missing_section',
-      incomplete: 'incomplete_content',
-      improvement: 'weak_description',
-    };
-
     gaps.push({
       id,
       field_path: `${section}.${field}`,
       title_en: label,
-      title_fa: label, // We don't have Persian, so copy English
+      title_fa: label,
       description_en: suggestion,
       description_fa: suggestion,
-      severity: severityMap[priority] || 'recommended',
-      category: categoryMap[gapType] || 'incomplete_content',
+      severity: priority,
+      category: category,
       relevant_domains: selectedDomains,
       fix_guidance_en: suggestion,
       fix_guidance_fa: suggestion,
       fix_example_en: '',
       fix_example_fa: '',
-      input_type: 'textarea', // Default to textarea
+      input_type: 'textarea',
       is_resolved: false,
       is_skipped: false,
       current_value: undefined,
@@ -1485,15 +1470,15 @@ function buildComprehensiveGaps(
   };
 
   // ══════════════════════════════════════
-  // LAYER 1: MISSING — domain says must exist 
-  //          but CV doesn't have it
+  // LAYER 1: STRICTLY MISSING (Structural)
+  // Only flag if the required field is TRULY empty.
+  // We don't check length anymore—AI handles quality.
   // ══════════════════════════════════════
 
   for (const domainId of selectedDomains) {
     const domain = CV_DOMAINS[domainId];
     if (!domain) continue;
 
-    // Check critical_fields
     if (domain.critical_fields) {
       for (const fieldPath of domain.critical_fields) {
         const parts = fieldPath.split('.');
@@ -1502,59 +1487,45 @@ function buildComprehensiveGaps(
           value = value?.[part];
         }
 
-        const isEmpty = !value ||
-          (typeof value === 'string' && value.length < 10) ||
+        // Strict emptiness check only
+        const isTrulyEmpty = value === null ||
+          value === undefined ||
+          (typeof value === 'string' && value.trim().length === 0) ||
           (Array.isArray(value) && value.length === 0);
 
-        if (isEmpty) {
+        if (isTrulyEmpty) {
           addGap(
             parts[0],
             parts[parts.length - 1],
             'Missing: ' + fieldPath.replace('.', ' > '),
             'critical',
-            'This is required for ' + (domain.label_en || domainId),
-            'missing'
+            'This information is essential for ' + (domain.label_en || domainId),
+            'missing_section'
           );
         }
       }
     }
 
-    // Check specific_sections
+    // Domain specific sections existence check
     if (domain.specific_sections) {
       for (const sec of domain.specific_sections) {
-        // Check in additional_sections
-        const existsInAdditional = cv.additional_sections?.some(
-          (s: any) => {
-            const title = (s.title || '').toLowerCase();
-            const secLabel = sec.label_en.toLowerCase();
-            return title.includes(secLabel.substring(0, 15)) ||
-              secLabel.includes(title.substring(0, 15));
-          }
+        // Check if it exists ANYWHERE in the CV
+        const inAdditional = cv.additional_sections?.some(
+          (s: any) => (s.title || '').toLowerCase().includes(sec.label_en.toLowerCase().substring(0, 10))
         );
+        const inMain =
+          (sec.id.includes('skill') && Array.isArray(cv.skills) && cv.skills.length > 0) ||
+          (sec.id.includes('project') && cv.projects && cv.projects.length > 0) ||
+          (sec.id.includes('cert') && cv.certifications && cv.certifications.length > 0);
 
-        // Check in main sections too
-        const secId = sec.id.toLowerCase();
-        const existsInMain =
-          (secId.includes('skill') && cv.skills &&
-            Array.isArray(cv.skills) && cv.skills.length > 0) ||
-          (secId.includes('project') && cv.projects &&
-            cv.projects.length > 0) ||
-          (secId.includes('cert') && cv.certifications &&
-            cv.certifications.length > 0) ||
-          (secId.includes('publication') &&
-            cv.additional_sections?.some(
-              (s: any) => (s.title || '').toLowerCase()
-                .includes('publication')
-            ));
-
-        if (!existsInAdditional && !existsInMain) {
+        if (!inAdditional && !inMain) {
           addGap(
             'domain_specific',
             sec.id,
             sec.label_en,
-            sec.is_required ? 'critical' : 'medium',
-            sec.example_en || 'Please provide this information',
-            'missing'
+            sec.is_required ? 'important' : 'recommended',
+            sec.description_en || 'Please provide this domain-specific expertise',
+            'domain_specific'
           );
         }
       }
@@ -1562,100 +1533,14 @@ function buildComprehensiveGaps(
   }
 
   // ══════════════════════════════════════
-  // LAYER 2: INCOMPLETE — exists but has 
-  //          missing data
-  // ══════════════════════════════════════
-
-  const pi = cv.personal_info;
-
-  if (!pi?.summary || pi.summary.length < 50) {
-    addGap('personal_info', 'summary',
-      'Professional Summary', 'high',
-      'Write a professional summary (3-5 sentences)',
-      'incomplete');
-  }
-  if (!pi?.phone || pi.phone.length < 5) {
-    addGap('personal_info', 'phone',
-      'Phone Number', 'high',
-      'e.g., +1234567890', 'incomplete');
-  }
-  if (!pi?.website_url) {
-    addGap('personal_info', 'website_url',
-      'Website / Portfolio', 'medium',
-      'https://yoursite.com', 'incomplete');
-  }
-  if (!pi?.location || pi.location.length < 3) {
-    addGap('personal_info', 'location',
-      'Location', 'medium',
-      'City, Country', 'incomplete');
-  }
-
-  // Work experience gaps
-  if (cv.work_experience) {
-    for (let i = 0; i < cv.work_experience.length; i++) {
-      const work = cv.work_experience[i];
-      const name = work.company || 'Position ' + (i + 1);
-
-      if (!work.description || work.description.length < 30) {
-        addGap('work_experience', 'description_' + i,
-          'Description for: ' + name,
-          'high',
-          'Describe responsibilities and achievements',
-          'incomplete');
-      }
-      if (!work.start_date) {
-        addGap('work_experience', 'dates_' + i,
-          'Dates for: ' + name,
-          'medium',
-          '2020-01 to 2023-06', 'incomplete');
-      }
-      if ((!work.achievements || work.achievements.length === 0) &&
-        work.description && work.description.length > 0) {
-        addGap('work_experience', 'achievements_' + i,
-          'Key achievements at: ' + name,
-          'medium',
-          'List 2-3 quantifiable achievements',
-          'incomplete');
-      }
-    }
-  }
-
-  // Education gaps
-  if (cv.education) {
-    for (let i = 0; i < cv.education.length; i++) {
-      const edu = cv.education[i];
-      const name = edu.institution || 'Education ' + (i + 1);
-
-      if (!edu.gpa && !edu.description) {
-        addGap('education', 'details_' + i,
-          'Details for: ' + name,
-          'low',
-          'GPA, thesis, or relevant coursework',
-          'incomplete');
-      }
-    }
-  }
-
-  // Empty main sections
-  if (!cv.certifications || cv.certifications.length === 0) {
-    addGap('certifications', 'certifications',
-      'Certifications & Licenses', 'medium',
-      'Any professional certifications?', 'incomplete');
-  }
-  if (!cv.projects || cv.projects.length === 0) {
-    addGap('projects', 'projects',
-      'Projects', 'medium',
-      'Key projects you have worked on', 'incomplete');
-  }
-
-  // ══════════════════════════════════════
-  // LAYER 3: IMPROVEMENT — AI suggestions
-  //          (from AI response)
+  // LAYER 2: AI-POWERED QUALITY ANALYSIS
+  // We trust the AI to find weak descriptions, missing metrics, 
+  // or poor summaries because it understands context better than code.
   // ══════════════════════════════════════
 
   if (aiGaps && Array.isArray(aiGaps)) {
     for (const aiGap of aiGaps) {
-      const section = (aiGap.section || 'general').toLowerCase();
+      const section = (aiGap.section || aiGap.field_path?.split('.')[0] || 'general').toLowerCase();
       const field = (aiGap.field || aiGap.field_name || aiGap.field_path?.split('.').pop() || 'unknown').toLowerCase();
       const key = section + '|' + field;
 
@@ -1664,10 +1549,10 @@ function buildComprehensiveGaps(
         gaps.push({
           ...aiGap,
           id: 'gap-' + idx++,
-          severity: aiGap.severity || 'optional',
+          severity: aiGap.severity || 'recommended',
           category: aiGap.category || 'weak_description',
-          is_resolved: aiGap.is_resolved || false,
-          is_skipped: aiGap.is_skipped || false,
+          is_resolved: false,
+          is_skipped: false,
         });
       }
     }
