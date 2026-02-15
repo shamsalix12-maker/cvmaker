@@ -304,6 +304,17 @@ export function CVCompletionFlow({
   const [rawText, setRawText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  useEffect(() => {
+    console.log('[DEBUG-FLOW-5] extracted_cv CHANGED:', {
+      hasCV: !!state.extracted_cv,
+      keys: state.extracted_cv ? Object.keys(state.extracted_cv) : [],
+      workCount: (state.extracted_cv as any)?.work_experience?.length,
+      currentStep: state.current_step,
+      personalInfo: JSON.stringify((state.extracted_cv as any)?.personal_info)?.substring(0, 200)
+    });
+  }, [state.extracted_cv, state.current_step]);
+
+
   // ─── Navigation ───
 
   const goToStep = useCallback((step: CVCompletionStep) => {
@@ -493,6 +504,11 @@ export function CVCompletionFlow({
 
         if (result.success && result.cv) {
           console.log('[CVFlow] AI Refinement successful');
+          console.log('[DEBUG-FLOW-1] result.cv keys:', Object.keys(result.cv));
+          console.log('[DEBUG-FLOW-2] result.cv.personal_info:', JSON.stringify(result.cv.personal_info)?.substring(0, 300));
+          console.log('[DEBUG-FLOW-3] result.cv.work_experience count:', result.cv.work_experience?.length);
+          console.log('[DEBUG-FLOW-4] result.cv.work_experience[0]:', JSON.stringify(result.cv.work_experience?.[0])?.substring(0, 300));
+
           setState(prev => ({
             ...prev,
             extracted_cv: result.cv,
@@ -1017,6 +1033,10 @@ export function CVCompletionFlow({
 
       // ─── Step: Improvement Review ───
       case 'improvement_review':
+        console.log('[DEBUG-FLOW-6] Rendering improvement_review', {
+          hasExtractedCV: !!state.extracted_cv,
+          cvKeys: state.extracted_cv ? Object.keys(state.extracted_cv) : []
+        });
         return (
           <ImprovementReview
             improvements={state.suggested_improvements}

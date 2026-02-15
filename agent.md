@@ -87,6 +87,15 @@
     - Extracts only the substring between the correct braces, effectively ignoring any "conversational" text before or after the JSON payload.
 - **Impact**: Increased robustness of AI interactions, especially when models add explanations or notes outside the requested JSON format.
 
+### Refinement Flow Debugging (2026-02-15)
+- **Problem**: Need to trace if and how the refined CV data is reaching the UI state and being rendered.
+- **Solution**: Added flow-specific debug logs in `src/components/cv/CVCompletionFlow.tsx`.
+- **Logs Added**:
+    - `[DEBUG-FLOW-1]` to `[DEBUG-FLOW-4]`: Traces the raw `result.cv` from the `refineCV` response before it hits the state.
+    - `[DEBUG-FLOW-5]`: A `useEffect` that monitors the `state.extracted_cv` and `state.current_step` for any changes.
+    - `[DEBUG-FLOW-6]`: Traces the state of the CV at the moment the `improvement_review` step is rendered.
+
+
 
 
 
