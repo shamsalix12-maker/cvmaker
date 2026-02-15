@@ -78,6 +78,8 @@ export interface EnhancedCVExtractionResult extends Omit<CVExtractionResult, 'cv
   cvLanguage?: string;
   /** نسخه منیجر استفاده شده */
   managerVersion?: string;
+  /** مرحله استخراج (برای V2) */
+  extractionStage?: string;
 }
 
 /**
@@ -87,6 +89,8 @@ export interface EnhancedCVExtractionRequest extends CVExtractionRequest {
   selectedDomains: CVDomainId[];
   cvLanguage?: string;
   managerVersion?: string;
+  extractionStage?: string;
+  existingCV?: Partial<ComprehensiveCV>;
 }
 
 // ═══════════════════════════════════════════

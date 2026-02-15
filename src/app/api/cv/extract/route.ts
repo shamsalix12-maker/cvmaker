@@ -41,6 +41,8 @@ export async function POST(request: NextRequest) {
     const domainsRaw = formData.get('domains') as string | null;
     const cvLanguage = (formData.get('cvLanguage') as string) || 'en';
     const managerVersion = formData.get('managerVersion') as string | null;
+    const extractionStage = formData.get('extractionStage') as string | null;
+    const existingCVRaw = formData.get('existingCV') as string | null;
 
     // API key sources
     const directApiKey = request.headers.get('x-api-key-bypass');
@@ -77,6 +79,9 @@ export async function POST(request: NextRequest) {
       hasDirectKey: !!directApiKey,
       hasDevKey: !!devUserApiKey,
       isDevUser: isDevUser(userId),
+      managerVersion,
+      extractionStage,
+      hasExistingCV: !!existingCVRaw,
     });
 
     // ─── Validation ───
@@ -189,6 +194,8 @@ export async function POST(request: NextRequest) {
       selectedDomains,
       cvLanguage,
       managerVersion: managerVersion || undefined,
+      extractionStage: extractionStage || undefined,
+      existingCV: existingCVRaw ? JSON.parse(existingCVRaw) : undefined,
     };
 
     const result = await extractCVWithAI(extractionRequest, apiKey);

@@ -85,14 +85,29 @@ export class V2ExperimentalManager extends V1StableManager {
 
             const cv = this.transformExtractedData(parsed, rawText);
             const aiGapAnalysis = this.transformGapAnalysis(parsed, selectedDomains);
-            const comprehensiveGaps = this.buildComprehensiveGaps(cv, selectedDomains, aiGapAnalysis?.gaps || []);
+            const allGaps = this.buildComprehensiveGaps(cv, selectedDomains, aiGapAnalysis?.gaps || []);
+
+            // Filter gaps to only include those relevant to the current stage
+            let filteredGaps = allGaps;
+            if (extractionStage === 'personal_info') {
+                filteredGaps = allGaps.filter(g => g.field_path.startsWith('personal_info') || g.field_path === '');
+            } else if (extractionStage === 'work_experience') {
+                filteredGaps = allGaps.filter(g => g.field_path.startsWith('work_experience'));
+            } else if (extractionStage === 'education') {
+                filteredGaps = allGaps.filter(g => g.field_path.startsWith('education'));
+            } else if (extractionStage === 'skills') {
+                filteredGaps = allGaps.filter(g => g.field_path.startsWith('skills'));
+            } else if (extractionStage === 'others') {
+                const otherPaths = ['projects', 'certifications', 'languages', 'additional_sections'];
+                filteredGaps = allGaps.filter(g => otherPaths.some(path => g.field_path.startsWith(path)));
+            }
 
             const gapAnalysis: CVGapAnalysis = {
                 selected_domains: selectedDomains,
                 detected_domains: aiGapAnalysis?.detected_domains || [],
                 overall_score: aiGapAnalysis?.overall_score || 0,
                 domain_scores: aiGapAnalysis?.domain_scores || {},
-                gaps: comprehensiveGaps,
+                gaps: filteredGaps,
                 strengths: aiGapAnalysis?.strengths || [],
                 analysis_summary: aiGapAnalysis?.analysis_summary || '',
                 general_recommendations: aiGapAnalysis?.general_recommendations || [],

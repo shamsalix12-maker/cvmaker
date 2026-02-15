@@ -361,8 +361,9 @@ export function CVCompletionFlow({
     }
   }, []);
 
-  const handleExtract = useCallback(async (forcedStage?: string) => {
+  const handleExtract = useCallback(async (forcedStage?: string, overrideCV?: Partial<ComprehensiveCV>) => {
     const stageToUse = forcedStage || state.current_stage;
+    const cvToUse = overrideCV || state.extracted_cv;
 
     if (!selectedFile && !rawText.trim()) {
       setError(locale === 'fa'
@@ -394,8 +395,8 @@ export function CVCompletionFlow({
 
       if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL && stageToUse) {
         formData.append('extractionStage', stageToUse);
-        if (state.extracted_cv) {
-          formData.append('existingCV', JSON.stringify(state.extracted_cv));
+        if (cvToUse) {
+          formData.append('existingCV', JSON.stringify(cvToUse));
         }
       }
 
@@ -445,7 +446,7 @@ export function CVCompletionFlow({
     }
   }, [selectedFile, rawText, aiProvider, aiModel, state.selected_domains, state.cv_language, state.manager_version, state.current_stage, state.extracted_cv, locale, goToStep]);
 
-  const handleNextStage = useCallback(() => {
+  const handleNextStage = useCallback((updatedCV?: Partial<ComprehensiveCV>) => {
     let nextStage: string | undefined;
 
     setState(prev => {
@@ -457,6 +458,7 @@ export function CVCompletionFlow({
         return {
           ...prev,
           current_stage: nextStage,
+          current_step: 'ai_extraction'
         };
       } else {
         return {
@@ -467,7 +469,7 @@ export function CVCompletionFlow({
     });
 
     if (nextStage) {
-      handleExtract(nextStage);
+      handleExtract(nextStage, updatedCV);
     }
   }, [state.extraction_stages, state.current_stage, handleExtract]);
 
@@ -523,7 +525,7 @@ export function CVCompletionFlow({
   const handleResolutionComplete = useCallback(async () => {
     if (!state.gap_analysis || !state.extracted_cv) {
       if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL) {
-        handleNextStage();
+        handleNextStage(state.extracted_cv || undefined);
       } else {
         goToStep('improvement_review');
       }
@@ -534,10 +536,14 @@ export function CVCompletionFlow({
       .filter(g => g.is_resolved && g.current_value)
       .map(g => ({ gapId: g.id, userInput: g.current_value! }));
 
-    // اگر هیچ گپی رفع نشده، بدون فراخوانی API به مرحله بعد برو
+    // اگر هیچ گپی رفع نشده، به مرحله بعد برو (در V2) یا به مرحله بازبینی (در V1)
     if (resolvedGaps.length === 0) {
-      console.log('[CVFlow] No resolved gaps, skipping refinement');
-      goToStep('improvement_review');
+      console.log('[CVFlow] No resolved gaps');
+      if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL) {
+        handleNextStage(state.extracted_cv || undefined);
+      } else {
+        goToStep('improvement_review');
+      }
       return;
     }
 
@@ -584,7 +590,7 @@ export function CVCompletionFlow({
               suggested_improvements: [...prev.suggested_improvements, ...(result.suggestedImprovements || [])],
               translations_applied: [...prev.translations_applied, ...(result.translationsApplied || [])],
             }));
-            handleNextStage();
+            handleNextStage(result.cv);
           } else {
             setState(prev => ({
               ...prev,
@@ -936,7 +942,12 @@ export function CVCompletionFlow({
                 </div>
                 <div className="flex bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                   <button
-                    onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V1_STABLE }))}
+                    onClick={() => setState(prev => ({
+                      ...prev,
+                      manager_version: CVManagerVersion.V1_STABLE,
+                      current_stage: undefined,
+                      extraction_stages: undefined
+                    }))}
                     className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V1_STABLE
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -945,7 +956,12 @@ export function CVCompletionFlow({
                     {locale === 'fa' ? 'پایدار (V1)' : 'Stable (V1)'}
                   </button>
                   <button
-                    onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V2_EXPERIMENTAL }))}
+                    onClick={() => setState(prev => ({
+                      ...prev,
+                      manager_version: CVManagerVersion.V2_EXPERIMENTAL,
+                      current_stage: V2_EXTRACTION_STAGES[0],
+                      extraction_stages: V2_EXTRACTION_STAGES
+                    }))}
                     className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V2_EXPERIMENTAL
                       ? 'bg-purple-600 text-white shadow-sm'
                       : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -1048,7 +1064,7 @@ export function CVCompletionFlow({
                 {isRTL ? '→' : '←'} {locale === 'fa' ? 'بازگشت' : 'Back'}
               </button>
               <button
-                onClick={handleExtract}
+                onClick={() => handleExtract()}
                 disabled={!selectedFile && !rawText.trim()}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
               >

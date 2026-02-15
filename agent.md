@@ -136,6 +136,12 @@
     - **Iterative Flow**: Updated `CVCompletionFlow.tsx` to loop through extraction and resolution for each section.
     - **Progress UI**: Added a visual stage indicator to show the user's progress through the sequential extraction process.
     - **Refinement Chaining**: Linked `handleResolutionComplete` to automatically advance to the next section's extraction.
+- **V1/V2 Differentiation Fix**: 
+    - Fixed UI toggle to correctly initialize extraction stages for V2.
+    - Updated API route to bridge sequential metadata (`extractionStage`, `existingCV`) to the backend manager.
+    - Fixed button click handlers to support the new `handleExtract` signature.
+    - **Backend Gap Filtering**: Updated `V2ExperimentalManager` to filter results by section, ensuring only section-relevant gaps are shown to the user.
+    - **Frontend State Sync**: Fixed a race condition in `CVCompletionFlow.tsx` where sequential stages were using stale CV data.
 
 ### Parallel CV Manager System Implementation (2026-02-16)
 - **Status**: Completed.
