@@ -121,6 +121,7 @@
     2.  **Layer 2 (Incomplete)**: Rule-based detection for missing details in common sections (e.g., summary length, missing contact info, work experience descriptions/achievements).
     3.  **Layer 3 (Improvement)**: Integrates AI-suggested refinements for qualitative improvements.
 - **Deterministic Prioritization**: Gaps are now automatically sorted by severity (`critical`, `important`, `recommended`, `optional`).
+- **Gap Resolution Bug Fix**: Fixed a bug in `GapResolutionWizard.tsx` where the "Skip" confirmation for critical gaps wasn't working due to a missing dependency in the `handleSkip` callback.
 
 
 
