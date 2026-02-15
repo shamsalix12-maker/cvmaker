@@ -657,6 +657,20 @@ export function safeRefineCV(
     refinedWorkCount: refinedCV.work_experience?.length || 0
   });
 
+  console.log('[DEBUG-GAP-7] safeRefineCV input comparison:');
+  console.log('[DEBUG-GAP-7a] Original certs:',
+    JSON.stringify(originalCV.certifications)
+      ?.substring(0, 300));
+  console.log('[DEBUG-GAP-7b] Refined certs:',
+    JSON.stringify(refinedCV.certifications)
+      ?.substring(0, 300));
+  console.log('[DEBUG-GAP-7c] Original projects:',
+    JSON.stringify(originalCV.projects)
+      ?.substring(0, 300));
+  console.log('[DEBUG-GAP-7d] Refined projects:',
+    JSON.stringify(refinedCV.projects)
+      ?.substring(0, 300));
+
   // Start with original data
   const result = JSON.parse(JSON.stringify(originalCV || {}));
 

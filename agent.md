@@ -95,6 +95,17 @@
     - `[DEBUG-FLOW-5]`: A `useEffect` that monitors the `state.extracted_cv` and `state.current_step` for any changes.
     - `[DEBUG-FLOW-6]`: Traces the state of the CV at the moment the `improvement_review` step is rendered.
 
+### Gap Resolution Pipeline Tracing (2026-02-15)
+- **Problem**: Need to verify if the actual user input from the gap resolution wizard is reaching the AI and being correctly merged back.
+- **Solution**: Added end-to-end trace logs from components to the merge logic.
+- **Trace Points**:
+    - **Frontend Initiation** (`[DEBUG-GAP-1]`, `[DEBUG-GAP-2]`): Traces `resolvedGaps` in `CVCompletionFlow.tsx` before calling the API.
+    - **Prompt Building** (`[DEBUG-GAP-3]`): Verifies that gaps are being correctly formatted into the AI user prompt in `cv-extraction-prompt.ts`.
+    - **AI Integration Verification** (`[DEBUG-GAP-4]`): Checks the `rawCV` after transformation in `cv-extractor.ts` to see if the AI actually included the gap data.
+    - **Final Merge Verification** (`[DEBUG-GAP-5]`, `[DEBUG-GAP-6]`): Compares the state before and after `safeRefineCV` in `cv-extractor.ts` to detect data gain/loss.
+    - **Merge Input Analysis** (`[DEBUG-GAP-7]`): Inspects the raw inputs to `safeRefineCV` in `multi-stage-extractor.ts` for deep comparison.
+
+
 
 
 

@@ -355,10 +355,60 @@ export async function refineCVWithAI(
 
     const rawCV = transformExtractedData(parsed, additionalText || currentCV.raw_text);
 
+    console.log('[DEBUG-GAP-4] After transform - checking if gaps were integrated:');
+    console.log('[DEBUG-GAP-4a] rawCV.personal_info.summary length:',
+      rawCV.personal_info?.summary?.length);
+    console.log('[DEBUG-GAP-4b] rawCV.work_experience:',
+      rawCV.work_experience?.map((w, i) => ({
+        idx: i,
+        company: (w as any).company?.substring(0, 30),
+        descLen: (w as any).description?.length || 0,
+        achCount: (w as any).achievements?.length || 0
+      })));
+    console.log('[DEBUG-GAP-4c] rawCV.certifications count:',
+      rawCV.certifications?.length);
+    console.log('[DEBUG-GAP-4d] rawCV.projects count:',
+      rawCV.projects?.length);
+
+
     // ═══════════════════════════════════════════════════════
     // استفاده از safeRefineCV برای جلوگیری از حذف داده‌ها
     // ═══════════════════════════════════════════════════════
     const cv = safeRefineCV(currentCV, rawCV);
+
+    console.log('[DEBUG-GAP-5] After safeRefineCV - final state:');
+    console.log('[DEBUG-GAP-5a] cv.personal_info.summary length:',
+      cv.personal_info?.summary?.length);
+    console.log('[DEBUG-GAP-5b] cv.work_experience:',
+      cv.work_experience?.map((w, i) => ({
+        idx: i,
+        id: (w as any).id,
+        company: (w as any).company?.substring(0, 30),
+        descLen: (w as any).description?.length || 0,
+        achCount: (w as any).achievements?.length || 0
+      })));
+    console.log('[DEBUG-GAP-5c] cv.certifications count:',
+      cv.certifications?.length);
+    console.log('[DEBUG-GAP-5d] cv.projects count:',
+      cv.projects?.length);
+
+    // CRITICAL: Compare what changed
+    console.log('[DEBUG-GAP-6] COMPARISON:', {
+      personalInfoChanged:
+        JSON.stringify(currentCV.personal_info) !==
+        JSON.stringify(cv.personal_info),
+      workCountBefore: currentCV.work_experience?.length,
+      workCountAfter: cv.work_experience?.length,
+      certsCountBefore: currentCV.certifications?.length,
+      certsCountAfter: cv.certifications?.length,
+      projectsCountBefore: currentCV.projects?.length,
+      projectsCountAfter: cv.projects?.length,
+      skillsCountBefore: Array.isArray(currentCV.skills) ?
+        currentCV.skills.length : 0,
+      skillsCountAfter: Array.isArray(cv.skills) ?
+        cv.skills.length : 0,
+    });
+
 
     // Validation نهایی
     const originalCounts = {

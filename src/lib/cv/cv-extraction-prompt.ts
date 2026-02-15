@@ -42,7 +42,7 @@ export function buildExtractionSystemPrompt(selectedDomains: CVDomainId[], cvLan
 
   // ساخت بخش توضیحات حوزه‌ای
   const domainContext = buildDomainContextBlock(domains);
-  
+
   // تعیین زبان CV
   const cvLangName = cvLanguage === 'fa' ? 'Persian (Farsi)' : 'English';
 
@@ -401,7 +401,7 @@ export function buildRefinementSystemPrompt(selectedDomains: CVDomainId[], cvLan
   const domainNames = domains
     .map(d => CV_DOMAINS[d]?.label_en || d)
     .join(', ');
-    
+
   const cvLangName = cvLanguage === 'fa' ? 'Persian (Farsi)' : 'English';
 
   return `You are an expert CV editor and career specialist for: ${domainNames}.
@@ -526,6 +526,12 @@ export function buildRefinementUserPrompt(
   parts.push('');
   parts.push('Respond with the complete JSON structure including suggested_improvements and translations_applied arrays.');
   parts.push('Respond with JSON only.');
+
+  console.log('[DEBUG-GAP-3] Gaps included in prompt:',
+    resolvedGaps.length);
+  resolvedGaps.forEach((g, i) => {
+    console.log(`[DEBUG-GAP-3.${i}] Prompt gap "${g.gapId}": "${g.userInput?.substring(0, 100)}"`);
+  });
 
   return parts.join('\n');
 }

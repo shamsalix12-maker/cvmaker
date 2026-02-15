@@ -489,6 +489,14 @@ export function CVCompletionFlow({
     setIsLoading(true);
     setError(null);
 
+    console.log('[DEBUG-GAP-1] Resolved gaps being sent:',
+      JSON.stringify(resolvedGaps, null, 2));
+
+    console.log('[DEBUG-GAP-2] Each gap detail:');
+    resolvedGaps.forEach((g, i) => {
+      console.log(`[DEBUG-GAP-2.${i}] Gap "${g.gapId}": "${g.userInput?.substring(0, 200)}"`);
+    });
+
     console.log('[CVFlow] Sending', resolvedGaps.length, 'resolved gaps to AI for refinement');
 
     try {
