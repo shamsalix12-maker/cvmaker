@@ -91,11 +91,16 @@ export class GapGenerator {
 
             const normalizedData = {
                 cv_id: audit.cv_id,
-                items: items.map((item: any) => ({
-                    ...item,
-                    example: typeof item.example === 'string' ? item.example : JSON.stringify(item.example || ''),
-                    skip_allowed: item.skip_allowed ?? true,
-                })),
+                items: items
+                    .filter((item: any) => {
+                        const field = String(item.field || '').toLowerCase();
+                        return !field.includes('user_id') && !field.includes('cv_id') && !field.includes('metadata');
+                    })
+                    .map((item: any) => ({
+                        ...item,
+                        example: typeof item.example === 'string' ? item.example : JSON.stringify(item.example || ''),
+                        skip_allowed: item.skip_allowed ?? true,
+                    })),
             };
 
             // Validate with Zod
