@@ -6,7 +6,7 @@ async function runTest() {
     console.log('🚀 Starting CV Processor V2.0 Test Pipeline...');
 
     const provider: AIProviderName = 'google'; // Default to google for test
-    const aiModel = 'gemini-2.0-flash';
+    const aiModel = 'gemini-2.5-flash';
     const apiKey = process.env.GOOGLE_AI_API_KEY || '';
 
     if (!apiKey) {

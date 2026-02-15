@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
                 provider_name: 'google' as AIProviderName,
                 is_valid: true,
                 available_models: [
-                    { model_id: 'gemini-1.5-flash', model_name: 'Gemini 1.5 Flash' },
+                    { model_id: 'gemini-2.5-flash', model_name: 'Gemini 2.5 Flash' },
                     { model_id: 'gemini-2.0-flash', model_name: 'Gemini 2.0 Flash' },
                 ],
                 token_balance: null,
