@@ -7,6 +7,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { toast } from 'sonner';
 import { ComprehensiveCV } from '@/lib/types';
 import { useCV } from '@/hooks/useCV';
+import { CVManagerVersion } from '@/lib/cv/managers/manager-factory';
 
 export default function CVManagerPage() {
   const params = useParams();
@@ -49,6 +50,7 @@ export default function CVManagerPage() {
           locale={locale}
           aiProvider={aiProvider}
           aiModel={aiModel}
+          initialManagerVersion={CVManagerVersion.V2}
           refineCV={refineCV}
           onComplete={handleComplete}
           onDeleteCV={deleteCV}

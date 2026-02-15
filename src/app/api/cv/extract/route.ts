@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { extractCVWithAI, EnhancedCVExtractionRequest } from '@/lib/cv/cv-extractor';
+import { CVProcessorV2 } from '@/lib/cv/v2';
 import { decryptApiKey } from '@/lib/encryption';
 import { parseFile } from '@/lib/parsers';
 import { AIProviderName } from '@/lib/types';
@@ -41,8 +42,6 @@ export async function POST(request: NextRequest) {
     const domainsRaw = formData.get('domains') as string | null;
     const cvLanguage = (formData.get('cvLanguage') as string) || 'en';
     const managerVersion = formData.get('managerVersion') as string | null;
-    const extractionStage = formData.get('extractionStage') as string | null;
-    const existingCVRaw = formData.get('existingCV') as string | null;
 
     // API key sources
     const directApiKey = request.headers.get('x-api-key-bypass');
@@ -80,8 +79,6 @@ export async function POST(request: NextRequest) {
       hasDevKey: !!devUserApiKey,
       isDevUser: isDevUser(userId),
       managerVersion,
-      extractionStage,
-      hasExistingCV: !!existingCVRaw,
     });
 
     // ─── Validation ───
@@ -187,15 +184,26 @@ export async function POST(request: NextRequest) {
     // ─── AI Extraction ───
     console.log(`[API Extract] Starting AI extraction with ${provider}/${model}...`);
 
+    if (managerVersion === 'v2') {
+      console.log('[API Extract] Using Processor V2.0 Pipeline');
+      const v2 = new CVProcessorV2(provider, model, apiKey);
+      const result = await v2.fullProcess(textToProcess, domainsRaw || '');
+
+      return NextResponse.json({
+        ...result,
+        cv: result.cv ? v2.toComprehensiveCV(result.cv) : null,
+        aiProvider: provider,
+        aiModel: model,
+        rawText: textToProcess,
+      });
+    }
+
     const extractionRequest: EnhancedCVExtractionRequest = {
       rawText: textToProcess,
       aiProvider: provider,
       aiModel: model,
       selectedDomains,
       cvLanguage,
-      managerVersion: managerVersion || undefined,
-      extractionStage: extractionStage || undefined,
-      existingCV: existingCVRaw ? JSON.parse(existingCVRaw) : undefined,
     };
 
     const result = await extractCVWithAI(extractionRequest, apiKey);

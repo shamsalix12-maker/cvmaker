@@ -59,4 +59,41 @@ export class CVProcessorV2 {
             gaps: gaps.success ? gaps.guidance : null,
         };
     }
+
+    /**
+     * Refines the CV by merging a patch.
+     */
+    async refine(currentCV: CanonicalCV, patch: Partial<CanonicalCV>) {
+        const merged = this.merger.merge(currentCV, patch);
+
+        // Re-audit after merge
+        const audit = await this.auditor.audit(merged);
+        const gaps = await this.gapGenerator.generate(audit.audit || {} as any, '');
+
+        return {
+            success: true,
+            cv: merged,
+            audit: audit.audit,
+            gaps: gaps.success ? gaps.guidance : null,
+        };
+    }
+
+    /**
+     * Maps CanonicalCV (V2) to ComprehensiveCV (V1) for UI compatibility.
+     */
+    toComprehensiveCV(cv: CanonicalCV): any {
+        return {
+            ...cv,
+            personal_info: {
+                full_name: cv.identity.full_name,
+                email: cv.identity.email,
+                phone: cv.identity.phone,
+                location: cv.identity.location,
+                linkedin_url: cv.identity.linkedin_url,
+                summary: cv.identity.summary,
+            },
+            work_experience: cv.experience,
+            // education, skills, projects, certifications are the same
+        };
+    }
 }

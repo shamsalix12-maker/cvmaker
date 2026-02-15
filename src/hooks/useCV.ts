@@ -18,6 +18,8 @@ interface UseCVReturn {
     error: string | null;
     fieldStatuses: CVFieldStatus[];
     completionPercentage: number;
+    audit: any | null;
+    gaps: any | null;
 
     // Actions
     fetchCV: () => Promise<void>;
@@ -63,6 +65,8 @@ export function useCV(): UseCVReturn {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [audit, setAudit] = useState<any | null>(null);
+    const [gaps, setGaps] = useState<any | null>(null);
 
     // Derived state
     const fieldStatuses = cv ? validateExtractedCV(cv) : [];
@@ -544,6 +548,8 @@ export function useCV(): UseCVReturn {
     }, [user, cv]);
 
     const applyExtraction = useCallback(async (result: CVExtractionResult) => {
+        if (result.audit) setAudit(result.audit);
+        if (result.gaps) setGaps(result.gaps);
         await saveCV(result.cv);
     }, [saveCV]);
 
@@ -554,6 +560,8 @@ export function useCV(): UseCVReturn {
         error,
         fieldStatuses,
         completionPercentage,
+        audit,
+        gaps,
         fetchCV,
         saveCV,
         updateCV,

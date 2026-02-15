@@ -365,6 +365,8 @@ export interface CVExtractionResult {
     aiProvider: AIProviderName;
     aiModel: string;
     extractionNotes?: string;
+    audit?: any;
+    gaps?: any;
 }
 
 export interface CVExtractionRequest {

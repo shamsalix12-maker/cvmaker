@@ -284,57 +284,6 @@ CRITICAL GAP RULES - NO HALLUCINATION:
     - This will be used to translate user inputs during refinement`;
 }
 
-/**
- * ساخت پرامپت استخراج مرحله‌ای (برای نسخه ۲)
- * این نسخه تمرکز روی یک بخش خاص دارد
- */
-export function buildStageExtractionPrompt(
-  stage: string,
-  selectedDomains: CVDomainId[],
-  cvLanguage: string = 'en'
-): string {
-  const basePrompt = buildExtractionSystemPrompt(selectedDomains, cvLanguage);
-
-  let stageFocusLabel = '';
-  let stageInstructions = '';
-
-  switch (stage) {
-    case 'personal_info':
-      stageFocusLabel = 'PERSONAL INFORMATION';
-      stageInstructions = 'Extract only the personal profile, contact details, and summary. Identify gaps like missing LinkedIn, phone, or weak summary.';
-      break;
-    case 'work_experience':
-      stageFocusLabel = 'WORK EXPERIENCE';
-      stageInstructions = 'Extract all work experience entries. Focus on identifying missing metrics, weak descriptions, or gaps in the timeline.';
-      break;
-    case 'education':
-      stageFocusLabel = 'EDUCATION';
-      stageInstructions = 'Extract all educational background. Identify gaps in GPA, field of study, or institution details.';
-      break;
-    case 'skills':
-      stageFocusLabel = 'SKILLS';
-      stageInstructions = 'Extract all skills and categorize them. Identify gaps for missing domain-specific technologies.';
-      break;
-    case 'others':
-      stageFocusLabel = 'OTHERS (PROJECTS, CERTS, LANGS)';
-      stageInstructions = 'Extract projects, certifications, and languages. Identify gaps in project impact or missing certifications.';
-      break;
-    default:
-      return basePrompt;
-  }
-
-  return `${basePrompt}
-
-═══════════════════════════════════════════════════════════════
-STAGE FOCUS: ${stageFocusLabel}
-═══════════════════════════════════════════════════════════════
-In this turn, you MUST prioritize and focus on the "${stageFocusLabel}" section.
-- ${stageInstructions}
-- Ensure the "extracted_data" for THIS section is complete.
-- Be extremely thorough in the "gap_analysis" for THIS section.
-- You can still extract other sections if they are clear, but THIS is the priority.
-═══════════════════════════════════════════════════════════════`;
-}
 
 /**
  * ساخت بخش JSON schema برای بخش‌های اختصاصی حوزه

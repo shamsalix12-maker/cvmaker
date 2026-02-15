@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { refineCVWithAI } from '@/lib/cv/cv-extractor';
+import { CVProcessorV2, CanonicalCV } from '@/lib/cv/v2';
 import { decryptApiKey } from '@/lib/encryption';
 import { AIProviderName, ComprehensiveCV } from '@/lib/types';
 import { CVDomainId } from '@/lib/types/cv-domain.types';
@@ -158,6 +159,21 @@ export async function POST(request: NextRequest) {
         gapCount: resolvedGaps?.length,
         instructions: instructions?.substring(0, 100)
       }));
+
+    if (managerVersion === 'v2') {
+      console.log('[API Refine] Using Processor V2.0 Refinement (Patch-based)');
+      const v2 = new CVProcessorV2(provider, model, apiKey);
+
+      // V2 expects a patch. If the UI sends Full CV updates, we merge them.
+      // If the UI sends resolvedGaps, we would ideally have an AI agent convert them to a Patch.
+      // For now, we use the Merger to apply simple updates if currentCV is provided as the new state.
+      const result = await v2.refine(currentCV as CanonicalCV, (body as any).patch || {});
+
+      return NextResponse.json({
+        ...result,
+        cv: result.cv ? v2.toComprehensiveCV(result.cv as any) : null,
+      });
+    }
 
     const result = await refineCVWithAI(
       currentCV,

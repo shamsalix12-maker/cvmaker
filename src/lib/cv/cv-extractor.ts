@@ -78,8 +78,6 @@ export interface EnhancedCVExtractionResult extends Omit<CVExtractionResult, 'cv
   cvLanguage?: string;
   /** نسخه منیجر استفاده شده */
   managerVersion?: string;
-  /** مرحله استخراج (برای V2) */
-  extractionStage?: string;
 }
 
 /**
@@ -89,8 +87,6 @@ export interface EnhancedCVExtractionRequest extends CVExtractionRequest {
   selectedDomains: CVDomainId[];
   cvLanguage?: string;
   managerVersion?: string;
-  extractionStage?: string;
-  existingCV?: Partial<ComprehensiveCV>;
 }
 
 // ═══════════════════════════════════════════
@@ -104,9 +100,7 @@ export async function extractCVWithAI(
   request: EnhancedCVExtractionRequest | CVExtractionRequest,
   apiKey: string
 ): Promise<EnhancedCVExtractionResult> {
-  // انتخاب نسخه منیجر (پایدار یا آزمایشی)
-  const version = (request as any).managerVersion || CVManagerVersion.V1_STABLE;
-  const manager = CVManagerFactory.getManager(version);
+  const manager = CVManagerFactory.getManager();
 
   console.log(`[CV Extractor] Delegating to manager: ${manager.id} (${manager.version})`);
 
