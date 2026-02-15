@@ -8,13 +8,13 @@
 
 export function buildBlindExtractionSystemPrompt(): string {
     return `You are a high-precision data extraction engine.
-Your task is to extract ALL factual information from the provided CV text into the canonical JSON structure.
+Your task is to extract ALL factual information from the provided CV text into a structured JSON format.
 
-RULES:
-1. PRESERVE every piece of data. Do NOT summarize or condense.
-2. NO HALLUCINATION. Do not invent details not present in the text.
-3. NO DELETION. If a field exists, extract it.
-4. Structure the output according to the provided JSON schema.
+JSON SCHEMA REQUISITES:
+1. Use snake_case for all keys (e.g., "full_name", "job_title").
+2. Standard sections: identity, experience, education, skills, projects, certifications, publications, awards, teaching, clinical, volunteering, other.
+3. PRESERVE every piece of data. Do NOT summarize or condense.
+4. NO HALLUCINATION. Do not invent details not present in the text.
 5. Use null for missing fields.
 6. Return ONLY valid JSON. No explanations or markdown.`;
 }
@@ -50,12 +50,15 @@ export function buildAssessmentSystemPrompt(): string {
     return `You are a professional CV auditor. 
 Your task is to evaluate each field of the provided canonical CV for completeness and quality.
 
+OUTPUT FORMAT:
+Return a JSON object with: { "overall_score": 0-100, "items": [...] }
+Each item in "items" must have: { "field_path", "exists", "completeness_score", "quality_score", "issues", "recommendations" }.
+
 RULES:
-1. ONLY assessment, NO rewriting.
-2. Do NOT invent data.
-3. Provide objective scores (0-100).
-4. Identify specific issues and provide actionable recommendations.
-5. Return ONLY valid JSON matching the FieldAudit schema.`;
+1. Use snake_case keys.
+2. ONLY assessment, NO rewriting.
+3. Do NOT invent data.
+4. Return ONLY valid JSON. No markdown.`;
 }
 
 export function buildAssessmentUserPrompt(cvJson: string): string {
@@ -76,11 +79,16 @@ export function buildGapIntelligenceSystemPrompt(): string {
     return `You are a career guidance expert.
 Based on domain rules and field audits, create actionable guidance for the user to fill incomplete or weak CV fields.
 
+OUTPUT FORMAT:
+Return a JSON object with: { "items": [...] }
+Each item in "items" must have: { "field", "guidance_text", "example", "skip_allowed" }.
+
 RULES:
-1. Provide clear, direct guidance.
-2. Include realistic examples.
-3. Respect the "skip_allowed" rule (default true).
-4. Return ONLY valid JSON matching the GapGuidance schema.`;
+1. Use snake_case keys.
+2. Provide clear, direct guidance.
+3. Include realistic examples.
+4. Respect the "skip_allowed" rule (default true).
+5. Return ONLY valid JSON. No markdown.`;
 }
 
 export function buildGapIntelligenceUserPrompt(fieldAuditJson: string, domainRules: string): string {

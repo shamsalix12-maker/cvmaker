@@ -100,6 +100,7 @@ export class BlindExtractor {
             return {
                 success: true,
                 cv: validation.data,
+                rawResponse: response,
             };
 
         } catch (error: any) {
@@ -108,17 +109,39 @@ export class BlindExtractor {
                 success: false,
                 cv: null,
                 error: error.message,
+                rawResponse: '', // Or previous value if available, but here it's caught from outer scope
             };
         }
     }
 
     private normalizeExtractedData(data: any, rawText: string): any {
+        // Robust key lookup helper
+        const get = (obj: any, ...keys: string[]) => {
+            if (!obj) return null;
+            for (const key of keys) {
+                if (obj[key] !== undefined) return obj[key];
+                // Case-insensitive search
+                const foundKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+                if (foundKey) return obj[foundKey];
+            }
+            return null;
+        };
+
+        const identityRaw = get(data, 'identity', 'personal_info', 'Identity', 'PersonalInfo') || {};
+
         // Ensure IDs exist for all array items
-        const ensureIds = (arr: any[], prefix: string) => {
+        const ensureIds = (input: any, prefix: string) => {
+            const arr = Array.isArray(input) ? input : (input && typeof input === 'object' && input.items ? input.items : []);
             if (!Array.isArray(arr)) return [];
             return arr.map((item, idx) => ({
                 ...item,
-                id: item.id || `${prefix}-${idx + 1}`,
+                id: item.id || get(item, 'id') || `${prefix}-${idx + 1}`,
+                // Map sub-keys loosely if needed
+                job_title: get(item, 'job_title', 'JobTitle', 'title', 'Title'),
+                company: get(item, 'company', 'Company', 'employer', 'Employer'),
+                degree: get(item, 'degree', 'Degree'),
+                field_of_study: get(item, 'field_of_study', 'FieldOfStudy', 'major', 'Major'),
+                institution: get(item, 'institution', 'Institution', 'university', 'University', 'school', 'School'),
             }));
         };
 
@@ -126,32 +149,32 @@ export class BlindExtractor {
 
         return {
             id: uuidv4(),
-            user_id: data.user_id || 'unassigned',
+            user_id: get(data, 'user_id') || 'unassigned',
             version: 1,
             identity: {
-                full_name: data.identity?.full_name || data.personal_info?.full_name || null,
-                email: data.identity?.email || data.personal_info?.email || null,
-                phone: data.identity?.phone || data.personal_info?.phone || null,
-                location: data.identity?.location || data.personal_info?.location || null,
-                linkedin_url: data.identity?.linkedin_url || data.personal_info?.linkedin_url || null,
-                website_url: data.identity?.website_url || data.personal_info?.website_url || null,
-                summary: data.identity?.summary || data.personal_info?.summary || null,
+                full_name: get(identityRaw, 'full_name', 'fullName', 'name', 'Name', 'FullName') || get(data, 'full_name', 'name'),
+                email: get(identityRaw, 'email', 'Email'),
+                phone: get(identityRaw, 'phone', 'PhoneNumber', 'Phone'),
+                location: get(identityRaw, 'location', 'Location', 'Address'),
+                linkedin_url: get(identityRaw, 'linkedin_url', 'linkedin', 'LinkedIn'),
+                website_url: get(identityRaw, 'website_url', 'website', 'Website'),
+                summary: get(identityRaw, 'summary', 'Summary', 'Objective'),
             },
-            experience: ensureIds(data.experience || data.work_experience || [], 'work'),
-            education: ensureIds(data.education || [], 'edu'),
-            skills: Array.isArray(data.skills) ? data.skills : [],
-            projects: ensureIds(data.projects || [], 'proj'),
-            certifications: ensureIds(data.certifications || [], 'cert'),
-            publications: ensureIds(data.publications || [], 'pub'),
-            awards: ensureIds(data.awards || [], 'award'),
-            teaching: ensureIds(data.teaching || [], 'teaching'),
-            clinical: ensureIds(data.clinical || [], 'clinical'),
-            volunteering: ensureIds(data.volunteering || [], 'volunteer'),
-            other: ensureIds(data.other || [], 'other'),
+            experience: ensureIds(get(data, 'experience', 'work_experience', 'Experience', 'WorkExperience'), 'work'),
+            education: ensureIds(get(data, 'education', 'Education'), 'edu'),
+            skills: Array.isArray(get(data, 'skills', 'Skills')) ? get(data, 'skills', 'Skills') : [],
+            projects: ensureIds(get(data, 'projects', 'Projects'), 'proj'),
+            certifications: ensureIds(get(data, 'certifications', 'Certifications'), 'cert'),
+            publications: ensureIds(get(data, 'publications', 'Publications'), 'pub'),
+            awards: ensureIds(get(data, 'awards', 'Awards'), 'award'),
+            teaching: ensureIds(get(data, 'teaching', 'Teaching'), 'teaching'),
+            clinical: ensureIds(get(data, 'clinical', 'Clinical'), 'clinical'),
+            volunteering: ensureIds(get(data, 'volunteering', 'Volunteering'), 'volunteer'),
+            other: ensureIds(get(data, 'other', 'Other'), 'other'),
             raw_text: rawText,
             created_at: now,
             updated_at: now,
-            metadata: data.metadata || {},
+            metadata: get(data, 'metadata', 'Metadata') || {},
         };
     }
 }

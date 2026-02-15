@@ -79,9 +79,23 @@ export class GapGenerator {
             console.log('[GapGenerator] JSON Parsed successfully. Item count:', parsedData.items?.length);
 
             // Ensure basic structure for Zod
+            let items = [];
+            if (Array.isArray(parsedData)) {
+                items = parsedData;
+            } else if (parsedData && Array.isArray(parsedData.items)) {
+                items = parsedData.items;
+            } else if (parsedData && parsedData.field && parsedData.guidance_text) {
+                // It returned a single object instead of a list
+                items = [parsedData];
+            }
+
             const normalizedData = {
                 cv_id: audit.cv_id,
-                items: Array.isArray(parsedData.items) ? parsedData.items : [],
+                items: items.map((item: any) => ({
+                    ...item,
+                    example: typeof item.example === 'string' ? item.example : JSON.stringify(item.example || ''),
+                    skip_allowed: item.skip_allowed ?? true,
+                })),
             };
 
             // Validate with Zod
@@ -100,6 +114,7 @@ export class GapGenerator {
             return {
                 success: true,
                 guidance: validation.data,
+                rawResponse: response,
             };
 
         } catch (error: any) {
@@ -108,6 +123,7 @@ export class GapGenerator {
                 success: false,
                 guidance: null,
                 error: error.message,
+                rawResponse: '',
             };
         }
     }

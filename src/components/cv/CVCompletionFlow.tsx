@@ -425,9 +425,10 @@ export function CVCompletionFlow({
 
       if (result.isHollow) {
         setError(isRTL
-          ? 'استخراج محتوا ناقص بود (امتیاز صفر). لطفاً دکمه "اطلاعات فنی" را بزنید.'
-          : 'Extraction returned empty results (0% score). See Debug Info for details.'
+          ? 'رزومه تحلیل شد اما محتوای مفیدی استخراج نشد (امتیاز صفر). لطفاً اطلاعات فنی (دیباگ) را بررسی کنید.'
+          : 'CV was analyzed but no meaningful content was extracted (0% score). Please check the Technical Debug Info below.'
         );
+        setState(prev => ({ ...prev, show_debug: true }));
       }
 
     } catch (err: unknown) {

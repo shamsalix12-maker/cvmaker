@@ -22,4 +22,4 @@
 - **SUCCESSFUL MODEL UPDATE**: Integrated support for the latest **Gemini 2.5 Flash** and **Gemini 3 Flash** models.
 - **API KEY RESOLUTION**: Applied user's experimental API key. Identified that standard IDs like `gemini-1.5-flash` return 404, while `gemini-2.5-flash` has a strict 20-request/day quota.
 - **FINAL STABILITY FIX**: Switched default model to `gemini-flash-latest`, which is fully supported by the new key and provides a high, reliable quota.
-- **DIAGNOSTIC UPDATE**: Added exhaustive server-side logging to all V2 pipeline components (`BlindExtractor`, `Auditor`, `GapGenerator`) to debug "hollow extraction" (0% score) issues by capturing raw AI output.
+- **GROQ INTEGRATION**: Successfully integrated Groq as an alternative provider and configured the environment with the user's Groq API key.

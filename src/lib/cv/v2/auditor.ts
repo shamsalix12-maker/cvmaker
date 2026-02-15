@@ -79,11 +79,20 @@ export class Auditor {
             console.log('[Auditor] JSON Parsed successfully. Score:', parsedData.overall_score);
 
             // Ensure basic structure for Zod
+            const rawItems = Array.isArray(parsedData) ? parsedData : (parsedData.items || []);
+
             const normalizedData = {
                 cv_id: cv.id,
                 audit_date: new Date().toISOString(),
-                overall_score: typeof parsedData.overall_score === 'number' ? parsedData.overall_score : 0,
-                items: Array.isArray(parsedData.items) ? parsedData.items : [],
+                overall_score: typeof parsedData.overall_score === 'number' ? parsedData.overall_score : 50,
+                items: rawItems.map((item: any) => ({
+                    ...item,
+                    exists: item.exists ?? true,
+                    completeness_score: item.completeness_score ?? 50,
+                    quality_score: item.quality_score ?? 50,
+                    issues: item.issues || [],
+                    recommendations: item.recommendations || [],
+                })),
             };
 
             // Validate with Zod
@@ -105,6 +114,7 @@ export class Auditor {
             return {
                 success: true,
                 audit: validation.data,
+                rawResponse: response,
             };
 
         } catch (error: any) {
@@ -113,6 +123,7 @@ export class Auditor {
                 success: false,
                 audit: null,
                 error: error.message,
+                rawResponse: '',
             };
         }
     }
