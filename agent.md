@@ -116,11 +116,10 @@
 
 ### Refinement & Gap Analysis (2026-02-15)
 - **Robust Gap Mode Validation**: Added specialized validation logic in `refineCVWithAI` (`cv-extractor.ts`). When resolving gaps, the system now explicitly verifies that the AI hasn't accidentally removed or truncated existing work experience, education, skills, certifications, or projects. If a decrease in data is detected, the original data is restored to prevent data loss.
-- **3-Layer Gap Detection System**: Implemented a comprehensive gap detection architecture in `cv-extractor.ts`:
-    1.  **Layer 1 (Missing)**: Validates CV against domain-specific critical fields and required sections from `cv-domains.ts`.
-    2.  **Layer 2 (Incomplete)**: Rule-based detection for missing details in common sections (e.g., summary length, missing contact info, work experience descriptions/achievements).
-    3.  **Layer 3 (Improvement)**: Integrates AI-suggested refinements for qualitative improvements.
-- **Deterministic Prioritization**: Gaps are now automatically sorted by severity (`critical`, `important`, `recommended`, `optional`).
+- **AI-Driven Gap Analysis**: Refactored the gap detection system to remove rigid, hardcoded quality rules (like length checks). The system now relies on:
+    1.  **Strict Structural Check**: Only flags fields as "Missing" if they are truly empty (null/empty string) and required by the selected domain.
+    2.  **AI Contextual Analysis**: Trusting the AI to identify qualitative gaps (weak descriptions, missing accomplishments, professional tone) rather than using arbitrary string length rules.
+- **Deterministic Prioritization**: Maintained severity-based sorting (`critical` to `optional`).
 - **Gap Resolution Bug Fix**: Fixed a bug in `GapResolutionWizard.tsx` where the "Skip" confirmation for critical gaps wasn't working due to a missing dependency in the `handleSkip` callback.
 
 
