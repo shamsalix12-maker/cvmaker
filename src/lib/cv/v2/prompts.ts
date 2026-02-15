@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 export function buildBlindExtractionSystemPrompt(): string {
-    return `You are a high-precision CV extraction engine.
+  return `You are a high-precision CV extraction engine.
 Your goal is to extract a comprehensive CV from the provided text, even if the input is messy or unstructured ("garbage").
 
 OUTPUT FORMAT:
@@ -58,7 +58,7 @@ RULES:
 }
 
 export function buildBlindExtractionUserPrompt(rawText: string): string {
-    return `Extract all factual information from the following CV text into the canonical JSON structure. 
+  return `Extract all factual information from the following CV text into the canonical JSON structure. 
 Preserve every piece of data, do not hallucinate or delete any field.
 
 Universal CV JSON sections: 
@@ -85,26 +85,20 @@ ${rawText}
 // ─────────────────────────────────────────────────────────────────
 
 export function buildAssessmentSystemPrompt(): string {
-    return `You are a professional CV auditor. 
+  return `You are a professional CV auditor. 
 Your task is to evaluate each field of the provided canonical CV for completeness and quality.
 
-OUTPUT FORMAT:
-Return a JSON object with: { "overall_score": 0-100, "items": [...] }
-Each item in "items" must have: { "field_path", "exists", "completeness_score", "quality_score", "issues", "recommendations" }.
-
 CRITICAL RULES:
-1. CONTEXT AWARENESS: Before marking a section as "exists: false", check if that information is already detailed in ANOTHER section. 
-   - Example: If "projects" is empty but "experience" describes significant projects, mark "projects" as "exists: true" (possibly with lower completeness) rather than totally missing.
-2. Use snake_case keys.
-3. ONLY assessment, NO rewriting.
-4. Return ONLY valid JSON. No markdown.`;
+1. FORGIVING AUDIT: Before marking a field as "exists: false", you MUST search the entire CV. 
+   - If a graduation year is mentioned but the "field_of_study" is missing in Education, but the "Summary" says they are a "Ph.D. in Biochemistry", then the field of study IS present in the CV context. Mark it as exists: true.
+   - Do NOT flag gaps for information that is clearly implied or stated elsewhere.
+2. SCORING: 0-100.
+3. OUTPUT: JSON object { "overall_score": 0-100, "items": [{ "field_path", "exists", "completeness_score", "quality_score", "issues", "recommendations" }] }.
+4. ONLY assessment, NO rewriting.`;
 }
 
 export function buildAssessmentUserPrompt(cvJson: string): string {
-    return `Evaluate each field of the provided canonical CV for completeness and quality.
-Return JSON: { field_path, exists, completeness_score, quality_score, issues, recommendations }.
-Do not rewrite or invent any data.
-
+  return `Evaluate the following CV. Be forgiving: check all sections before flagging a missing field.
 ---CANONICAL CV JSON---
 ${cvJson}
 ---`;
@@ -115,31 +109,26 @@ ${cvJson}
 // ─────────────────────────────────────────────────────────────────
 
 export function buildGapIntelligenceSystemPrompt(): string {
-    return `You are a career guidance expert.
-Based on domain rules and field audits, create actionable guidance for the user to fill incomplete or weak CV fields.
-
-OUTPUT FORMAT:
-Return a JSON object with: { "items": [...] }
-Each item in "items" must have: { "field", "guidance_text", "example", "skip_allowed" }.
+  return `You are a career guidance expert.
+Based on the CV and Audit, create actionable guidance to improve the CV.
 
 RULES:
-1. Use snake_case keys.
-2. NO REDUNDANCY: Do NOT ask for information that is already present in other parts of the CV. 
-3. Provide clear, direct guidance.
-4. Include realistic examples.
-5. Respect the "skip_allowed" rule (default true).
-6. Return ONLY valid JSON. No markdown.`;
+1. DOMAIN RELEVANCE: Tailor every example to the user's specific industry (e.g., if they are in Medicine, do NOT use Computer Science examples).
+2. NO REDUNDANCY: Do NOT ask for information already present anywhere in the CV.
+3. ACCURACY: If the Auditor flagged a gap that you see is actually present in the CV, ignore that audit item.
+4. OUTPUT: JSON { "items": [{ "field", "guidance_text", "example", "skip_allowed" }] }.`;
 }
 
-export function buildGapIntelligenceUserPrompt(fieldAuditJson: string, domainRules: string): string {
-    return `Based on the following domain rules and field audits, create actionable guidance for the user to fill incomplete fields.
-Include examples and skip instructions. Output structured JSON { field, guidance_text, example, skip_allowed }.
-
+export function buildGapIntelligenceUserPrompt(fieldAuditJson: string, cvJson: string, domainRules: string): string {
+  return `Create domain-specific guidance.
 ---DOMAIN RULES---
 ${domainRules}
 
----FIELD AUDIT JSON---
+---FIELD AUDIT---
 ${fieldAuditJson}
+
+---FULL CV CONTEXT---
+${cvJson}
 ---`;
 }
 
@@ -148,7 +137,7 @@ ${fieldAuditJson}
 // ─────────────────────────────────────────────────────────────────
 
 export function buildRenderingSystemPrompt(): string {
-    return `You are a professional CV formatter and typesetter.
+  return `You are a professional CV formatter and typesetter.
 Your task is to render high-quality formatted CV text from the provided canonical CV JSON.
 
 RULES:
@@ -160,8 +149,8 @@ RULES:
 }
 
 export function buildRenderingUserPrompt(cvJson: string, domains: string[]): string {
-    const domainText = domains.join(', ');
-    return `Render a professional CV text from the canonical CV JSON. 
+  const domainText = domains.join(', ');
+  return `Render a professional CV text from the canonical CV JSON. 
 Do not invent or remove any data. Focus on readability, clarity, formatting, and multi-domain applicability for: ${domainText}.
 
 ---CANONICAL CV JSON---

@@ -77,7 +77,7 @@ export class CVProcessorV2 {
         let gapsRaw = '';
         if (auditResult) {
             try {
-                const gaps = await this.gapGenerator.generate(auditResult, domainRules);
+                const gaps = await this.gapGenerator.generate(auditResult, extraction.cv, domainRules);
                 gapsRaw = (gaps as any).rawResponse || '';
                 if (gaps.success && gaps.guidance) {
                     gapsResult = gaps.guidance;

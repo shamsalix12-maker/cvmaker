@@ -4,7 +4,8 @@ import { AIProviderName } from '@/lib/types';
 import {
     FieldAudit,
     GapGuidance,
-    GapGuidanceSchema
+    GapGuidanceSchema,
+    CanonicalCV
 } from './types';
 import {
     buildGapIntelligenceSystemPrompt,
@@ -25,7 +26,7 @@ export class GapGenerator {
         private apiKey: string
     ) { }
 
-    async generate(audit: FieldAudit, domainRules: string): Promise<GapResult> {
+    async generate(audit: FieldAudit, cv: CanonicalCV, domainRules: string): Promise<GapResult> {
         console.log(`[GapGenerator] Starting gap generation for CV ${audit.cv_id}`);
 
         try {
@@ -49,7 +50,7 @@ export class GapGenerator {
                     {
                         id: 'usr-gap',
                         role: 'user',
-                        content: buildGapIntelligenceUserPrompt(JSON.stringify(audit, null, 2), domainRules),
+                        content: buildGapIntelligenceUserPrompt(JSON.stringify(audit, null, 2), JSON.stringify(cv, null, 2), domainRules),
                         timestamp: new Date().toISOString(),
                     },
                 ],
