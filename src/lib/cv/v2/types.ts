@@ -24,6 +24,7 @@ export const WorkExperienceSchema = z.object({
     is_current: z.boolean().default(false),
     description: z.string().nullable().default(null),
     achievements: z.array(z.string()).default([]),
+    metadata: z.record(z.string(), z.any()).default({}),
 });
 
 export const EducationSchema = z.object({
@@ -36,6 +37,7 @@ export const EducationSchema = z.object({
     end_date: z.string().nullable().default(null),
     gpa: z.string().nullable().default(null),
     description: z.string().nullable().default(null),
+    metadata: z.record(z.string(), z.any()).default({}),
 });
 
 export const ProjectSchema = z.object({
@@ -46,6 +48,7 @@ export const ProjectSchema = z.object({
     url: z.string().nullable().default(null),
     start_date: z.string().nullable().default(null),
     end_date: z.string().nullable().default(null),
+    metadata: z.record(z.string(), z.any()).default({}),
 });
 
 export const CertificationSchema = z.object({
@@ -56,12 +59,14 @@ export const CertificationSchema = z.object({
     expiry_date: z.string().nullable().default(null),
     credential_id: z.string().nullable().default(null),
     credential_url: z.string().nullable().default(null),
+    metadata: z.record(z.string(), z.any()).default({}),
 });
 
 export const GenericSectionSchema = z.object({
     id: z.string(),
     title: z.string().nullable().default(null),
     content: z.string().nullable().default(null),
+    metadata: z.record(z.string(), z.any()).default({}),
 });
 
 export const CanonicalCVSchema = z.object({

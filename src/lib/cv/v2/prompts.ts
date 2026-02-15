@@ -7,73 +7,36 @@
 // ─────────────────────────────────────────────────────────────────
 
 export function buildBlindExtractionSystemPrompt(): string {
-  return `You are a high-precision CV extraction engine.
-Your goal is to extract a comprehensive CV from the provided text, even if the input is messy or unstructured ("garbage").
+  return `You are an EXTREME-PRECISION CV extraction engine.
+Your goal is to extract a COMPREHENSIVE, VERBATIM CV from the provided text.
+
+CRITICAL RULES:
+1. ZERO SUMMARIZATION: Capture every single word of responsibilities, achievements, and descriptions. Do NOT simplify or shorten any text.
+2. VERBATIM EXTRACTION: If a description has 10 bullet points, extract all 10 bullet points into the JSON.
+3. DATA FIDELITY: Truncating a description is considered a system failure.
+4. ALL SECTIONS: Ensure identity, experience, education, skills, projects, certifications, publications, awards, teaching, clinical, volunteering, and other are all captured if present.
 
 OUTPUT FORMAT:
-Return ONLY valid JSON that matches the following structure. 
-DO NOT change key names. DO NOT summarize content.
-
+Return ONLY valid JSON.
 {
-  "identity": {
-    "full_name": "...",
-    "email": "...",
-    "phone": "...",
-    "location": "...",
-    "linkedin_url": "...",
-    "website_url": "...",
-    "summary": "..."
-  },
-  "experience": [
-    {
-      "job_title": "...",
-      "company": "...",
-      "location": "...",
-      "start_date": "...",
-      "end_date": "...",
-      "is_current": false,
-      "description": "...",
-      "achievements": ["..."]
-    }
-  ],
-  "education": [...],
+  "identity": { "full_name": "...", "email": "...", "phone": "...", "location": "...", "linkedin_url": "...", "website_url": "...", "summary": "..." },
+  "experience": [{ "job_title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...", "is_current": false, "description": "...", "achievements": ["..."] }],
+  "education": [{ "degree": "...", "field_of_study": "...", "institution": "...", "location": "...", "start_date": "...", "end_date": "...", "gpa": "...", "description": "..." }],
   "skills": ["..."],
-  "projects": [...],
-  "certifications": [...],
-  "publications": [...],
-  "awards": [...],
-  "teaching": [...],
-  "clinical": [...],
-  "volunteering": [...],
-  "other": [...],
-  "metadata": {
-    "all_raw_captured_data": "Put any extra keys or text here that didn't fit the main fields"
-  }
-}
-
-RULES:
-1. DATA LOSS IS FORBIDDEN: Capture every date, location, and duty description perfectly.
-2. RESILIENCE: If a field name is unclear in the text, guess the most logical mapping.
-3. No prose or markdown. Return only the JSON object.`;
+  "projects": [{ "name": "...", "description": "...", "technologies": ["..."], "url": "...", "start_date": "...", "end_date": "..." }],
+  "certifications": [{ "name": "...", "issuer": "...", "date_obtained": "...", "expiry_date": "...", "credential_id": "...", "credential_url": "..." }],
+  "publications": [{ "title": "...", "content": "..." }],
+  "awards": [{ "title": "...", "content": "..." }],
+  "teaching": [{ "title": "...", "content": "..." }],
+  "clinical": [{ "title": "...", "content": "..." }],
+  "volunteering": [{ "title": "...", "content": "..." }],
+  "other": [{ "title": "...", "content": "..." }],
+  "metadata": { "all_raw_captured_data": "..." }
+}`;
 }
 
 export function buildBlindExtractionUserPrompt(rawText: string): string {
-  return `Extract all factual information from the following CV text into the canonical JSON structure. 
-Preserve every piece of data, do not hallucinate or delete any field.
-
-Universal CV JSON sections: 
-- Identity
-- Experience[]
-- Education[]
-- Skills[]
-- Projects[]
-- Certifications[]
-- Publications[]
-- Awards[]
-- Teaching[]
-- Clinical[]
-- Volunteering[]
-- Other[]
+  return `Extract the following CV with 100% fidelity. DO NOT SUMMARIZE. Capture every detail verbatim.
 
 ---CV TEXT---
 ${rawText}

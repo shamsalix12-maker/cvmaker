@@ -78,29 +78,55 @@ export class Renderer {
         let text = `${cv.identity.full_name}\n`;
         text += `${cv.identity.email} | ${cv.identity.phone} | ${cv.identity.location}\n`;
         if (cv.identity.linkedin_url) text += `LinkedIn: ${cv.identity.linkedin_url}\n`;
+        if (cv.identity.website_url) text += `Website: ${cv.identity.website_url}\n`;
         if (cv.identity.summary) text += `\nSUMMARY\n${cv.identity.summary}\n`;
 
-        if (cv.experience.length > 0) {
-            text += `\nEXPERIENCE\n`;
-            for (const w of cv.experience) {
-                text += `${w.job_title} at ${w.company} (${w.start_date} - ${w.end_date || 'Present'})\n`;
-                text += `${w.description}\n`;
-                if (w.achievements.length > 0) {
-                    text += `Achievements:\n - ${w.achievements.join('\n - ')}\n`;
+        const renderSection = (title: string, items: any[]) => {
+            if (items.length === 0) return '';
+            let s = `\n${title.toUpperCase()}\n`;
+            for (const item of items) {
+                if (item.job_title) {
+                    s += `${item.job_title} @ ${item.company} (${item.start_date} - ${item.end_date || 'Present'})\n`;
+                    if (item.description) s += `${item.description}\n`;
+                    if (item.achievements?.length > 0) s += `Achievements:\n - ${item.achievements.join('\n - ')}\n`;
+                } else if (item.degree) {
+                    s += `${item.degree} in ${item.field_of_study}, ${item.institution} (${item.start_date} - ${item.end_date})\n`;
+                    if (item.description) s += `${item.description}\n`;
+                } else if (item.title) {
+                    s += `${item.title}\n${item.content}\n`;
+                } else if (typeof item === 'string') {
+                    s += `- ${item}\n`;
                 }
-                text += `\n`;
-            }
-        }
 
-        if (cv.education.length > 0) {
-            text += `\nEDUCATION\n`;
-            for (const e of cv.education) {
-                text += `${e.degree} in ${e.field_of_study}, ${e.institution} (${e.start_date} - ${e.end_date})\n\n`;
+                // Render metadata (Lossless Extraction)
+                if (item.metadata && Object.keys(item.metadata).length > 0) {
+                    Object.entries(item.metadata).forEach(([k, v]) => {
+                        if (v) s += `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}\n`;
+                    });
+                }
+                s += `\n`;
             }
-        }
+            return s;
+        };
 
-        if (cv.skills.length > 0) {
-            text += `\nSKILLS\n${cv.skills.join(', ')}\n`;
+        text += renderSection('Experience', cv.experience);
+        text += renderSection('Education', cv.education);
+        text += renderSection('Skills', cv.skills);
+        text += renderSection('Projects', cv.projects);
+        text += renderSection('Certifications', cv.certifications);
+        text += renderSection('Publications', cv.publications);
+        text += renderSection('Awards', cv.awards);
+        text += renderSection('Teaching', cv.teaching);
+        text += renderSection('Clinical', cv.clinical);
+        text += renderSection('Volunteering', cv.volunteering);
+        text += renderSection('Other', cv.other);
+
+        // Global metadata
+        if (cv.metadata && Object.keys(cv.metadata).length > 0) {
+            text += `\nADDITIONAL DATA\n`;
+            Object.entries(cv.metadata).forEach(([k, v]) => {
+                text += `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}\n`;
+            });
         }
 
         return text;

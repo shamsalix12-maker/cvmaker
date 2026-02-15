@@ -118,8 +118,9 @@ export class BlindExtractor {
         console.log('[BlindExtractor] Normalizing data. Root keys:', Object.keys(data));
 
         // Deep recursive search helper that supports multiple aliases
-        const findKey = (obj: any, targetKeys: string | string[]): any => {
-            if (!obj || typeof obj !== 'object') return undefined;
+        // Returns { value, foundKey }
+        const findKeyWithMeta = (obj: any, targetKeys: string | string[]): { value: any, key: string | null } => {
+            if (!obj || typeof obj !== 'object') return { value: undefined, key: null };
             const targets = Array.isArray(targetKeys) ? targetKeys : [targetKeys];
 
             const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -130,18 +131,20 @@ export class BlindExtractor {
             // 1. Direct or fuzzy match at current level for any target
             for (const tSlug of targetSlugs) {
                 const foundKey = keys.find(k => slug(k) === tSlug);
-                if (foundKey !== undefined) return obj[foundKey];
+                if (foundKey !== undefined) return { value: obj[foundKey], key: foundKey };
             }
 
-            // 2. Search children
+            // 2. Search children (limited to 3 levels)
             for (const key of keys) {
                 if (typeof obj[key] === 'object' && obj[key] !== null) {
-                    const result = findKey(obj[key], targets);
-                    if (result !== undefined) return result;
+                    const result = findKeyWithMeta(obj[key], targets);
+                    if (result.value !== undefined) return result;
                 }
             }
-            return undefined;
+            return { value: undefined, key: null };
         };
+
+        const findKey = (obj: any, targets: string | string[]) => findKeyWithMeta(obj, targets).value;
 
         // Helpers to normalize specific types
         const asString = (val: any) => {
@@ -182,18 +185,31 @@ export class BlindExtractor {
         // 2. Arrays
         const normalizeItems = (raw: any, prefix: string, fieldMap: Record<string, string[] | string>) => {
             return asArray(raw).map((item: any, idx: number) => {
-                if (typeof item !== 'object') return { id: `${prefix}-${idx}`, description: String(item) };
-                const normalized: any = { id: item.id || `${prefix}-${idx + 1}` };
+                if (typeof item !== 'object') return { id: `${prefix}-${idx}`, description: String(item), metadata: {} };
+
+                const normalized: any = { id: item.id || `${prefix}-${idx + 1}`, metadata: {} };
+                const usedKeys = new Set<string>();
+
                 Object.entries(fieldMap).forEach(([targetKey, aliases]) => {
-                    const rawVal = findKey(item, aliases);
+                    const { value, key } = findKeyWithMeta(item, aliases);
+                    if (key) usedKeys.add(key);
+
                     if (targetKey === 'achievements' || targetKey === 'technologies') {
-                        normalized[targetKey] = asArray(rawVal).map((v: any) => asString(v));
+                        normalized[targetKey] = asArray(value).map((v: any) => asString(v));
                     } else if (targetKey === 'is_current') {
-                        normalized[targetKey] = asBoolean(rawVal);
+                        normalized[targetKey] = asBoolean(value);
                     } else {
-                        normalized[targetKey] = asString(rawVal);
+                        normalized[targetKey] = asString(value);
                     }
                 });
+
+                // Capture all other keys into metadata (Lossless Extraction)
+                Object.keys(item).forEach(k => {
+                    if (!usedKeys.has(k) && k !== 'id') {
+                        normalized.metadata[k] = item[k];
+                    }
+                });
+
                 return normalized;
             });
         };
