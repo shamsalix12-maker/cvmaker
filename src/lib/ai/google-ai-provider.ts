@@ -110,8 +110,8 @@ export class GoogleAIProvider extends BaseAIProvider {
             const userMessages = options.messages.filter(m => m.role !== 'system');
             console.log('[GoogleAI] User messages count:', userMessages.length);
 
-            // HARDCODED: 65536 for Gemini Flash to ensure no truncation
-            const maxTokens = 65536;
+            // Honor passed maxTokens, default to reasonable value for Gemini if not provided
+            const maxTokens = options.maxTokens ?? config.maxTokens ?? 32768;
             console.log('[GoogleAI] maxTokens set to:', maxTokens);
 
             const safetySettings = [

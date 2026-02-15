@@ -126,7 +126,7 @@ export async function extractCVWithAI(
 
     const config: AIProviderConfig = {
       apiKey,
-      temperature: 0.1,
+      temperature: 0,
       maxTokens: 32768,  // افزایش برای جلوگیری از truncation
     };
 
@@ -297,7 +297,7 @@ export async function refineCVWithAI(
 
     const config: AIProviderConfig = {
       apiKey,
-      temperature: 0.2,
+      temperature: 0,
       maxTokens: 32768,
     };
 

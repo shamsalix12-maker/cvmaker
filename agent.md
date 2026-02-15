@@ -110,6 +110,11 @@
 - **Bug 2: Duplicate Certifications & Projects**: Implemented Set-based deduplication in `safeRefineCV` (`multi-stage-extractor.ts`) to prevent existing items from being appended multiple times during refinement.
 - **Bug 3: Duplicate Work Achievements**: Added granular deduplication for work experience achievements in `safeRefineCV`. It now checks the first 50 characters of each achievement to determine if it's already present before adding.
 
+### AI Parameters Tuning (2026-02-15)
+- **Temperature Locked to 0**: Set `temperature: 0` in `cv-extractor.ts` for both extraction and refinement to ensure maximum determinism in AI responses.
+- **maxTokens Logic Fixed**: Removed a hardcoded `65536` override in `google-ai-provider.ts` that was ignoring the `32768` value sent from the CV extractor. The provider now correctly honors the passed `config.maxTokens` or `options.maxTokens`.
+
+
 
 
 
