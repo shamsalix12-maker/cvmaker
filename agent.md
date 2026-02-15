@@ -68,4 +68,15 @@
     - `src/hooks/useCV.ts`: Logged frontend request and response metadata (`[REFINE-DEBUG-8]`, `[REFINE-DEBUG-9]`).
 - **Purpose**: To identify where data loss or truncation occurs during the multi-stage AI interaction.
 
+### Smart Merge Refinement Strategy (2026-02-15)
+- **Problem**: The previous `safeRefineCV` only filled empty fields, rejecting AI-integrated gap data for fields that already had placeholders or partial data.
+- **Solution**: Implemented a "Smart Merge" strategy in `src/lib/cv/multi-stage-extractor.ts`.
+- **Logic**:
+    - **Enrichment Detection**: Updates fields if the new content contains the original or is significantly longer (1.2x length).
+    - **Preservation**: Core identifying fields (comany names, degree titles, dates) are preserved from the original to prevent AI "re-imagining".
+    - **Skill Upgrading**: Automatically upgrades simple string skills to detailed object skills when AI provides more metadata.
+    - **Traceability**: Added specific `[SafeRefine]` logs indicating why each field was updated or rejected.
+- **Safety**: Maintained all previous integrity checks, including section count validation and summary truncation protection.
+
+
 

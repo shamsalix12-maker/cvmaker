@@ -649,132 +649,209 @@ export function safeRefineCV(
   refinedCV: Partial<ComprehensiveCV>
 ): Partial<ComprehensiveCV> {
   console.log('[REFINE-DEBUG-6] safeRefineCV called:', {
-    originalSections: Object.keys(originalCV),
-    refinedSections: Object.keys(refinedCV),
-    originalWorkCount: originalCV.work_experience?.length,
-    refinedWorkCount: refinedCV.work_experience?.length
+    hasOriginal: !!originalCV,
+    hasRefined: !!refinedCV,
+    originalSections: originalCV ? Object.keys(originalCV) : [],
+    refinedSections: refinedCV ? Object.keys(refinedCV) : [],
+    originalWorkCount: originalCV.work_experience?.length || 0,
+    refinedWorkCount: refinedCV.work_experience?.length || 0
   });
 
   // Start with original data
-  const result = JSON.parse(JSON.stringify(originalCV));
+  const result = JSON.parse(JSON.stringify(originalCV || {}));
 
-  // Personal Info: only fill empty fields
+  // 1. Personal Info: Smart Update (Accept enrichment, reject replacement)
   if (refinedCV.personal_info) {
     if (!result.personal_info) result.personal_info = {};
 
     for (const [key, value] of Object.entries(refinedCV.personal_info)) {
       const currentValue = (result.personal_info as any)[key];
-      // Only replace if current is empty/null and new has value
-      if (value && (!currentValue || currentValue === '')) {
-        (result.personal_info as any)[key] = value;
+
+      // Case 1: Current is empty or null -> use refined
+      if (!currentValue || currentValue === '') {
+        if (value) {
+          (result.personal_info as any)[key] = value;
+          console.log(`[SafeRefine] Updated ${key}: (empty -> value)`);
+        }
+        continue;
+      }
+
+      // Case 2: Refined is empty or null -> keep current
+      if (!value || value === '') {
+        continue;
+      }
+
+      // Case 3: Both have values -> use refined ONLY if it's an enrichment
+      if (typeof value === 'string' && typeof currentValue === 'string') {
+        const normalizedCurrent = currentValue.toLowerCase().trim();
+        const normalizedRefined = value.toLowerCase().trim();
+
+        // Rule A: Refined version contains the original content (AI extended it)
+        const containsOriginal = normalizedRefined.includes(
+          normalizedCurrent.substring(0, Math.min(50, normalizedCurrent.length))
+        );
+
+        // Rule B: Refined is significantly longer (likely contains new detailed info)
+        const isSignificantlyLonger = value.length > currentValue.length * 1.2;
+
+        if (containsOriginal || isSignificantlyLonger) {
+          (result.personal_info as any)[key] = value;
+          console.log(`[SafeRefine] Updated ${key}:`, {
+            reason: containsOriginal ? 'contains original' : 'significantly longer',
+            oldLength: currentValue.length,
+            newLength: value.length
+          });
+        }
       }
     }
   }
 
-  // Work Experience: NEVER delete, only add or enhance
+  // 2. Work Experience: Smart Enrichment (Match entries and add detail)
   if (refinedCV.work_experience && refinedCV.work_experience.length > 0) {
     if (!result.work_experience) result.work_experience = [];
 
     for (const refinedWork of refinedCV.work_experience) {
+      // Find matching existing entry by ID or (Company + Title)
       const existingIdx = result.work_experience.findIndex(
-        (w: any) => w.id === refinedWork.id ||
-          (w.company === refinedWork.company && w.job_title === refinedWork.job_title)
+        (w: any) =>
+          (refinedWork.id && w.id === refinedWork.id) ||
+          (w.company?.toLowerCase() === refinedWork.company?.toLowerCase() &&
+            w.job_title?.toLowerCase() === refinedWork.job_title?.toLowerCase())
       );
 
       if (existingIdx >= 0) {
         const existing = result.work_experience[existingIdx];
-        // Only fill empty fields
+
+        // Process each field in the work entry
         for (const [key, value] of Object.entries(refinedWork)) {
-          if (value && (!existing[key] || existing[key] === '')) {
-            existing[key] = value;
+          const curVal = (existing as any)[key];
+
+          // If existing field is truly empty -> take refined value
+          if (!curVal || curVal === '' || (Array.isArray(curVal) && curVal.length === 0)) {
+            if (value) {
+              (existing as any)[key] = value;
+              console.log(`[SafeRefine] Work [${existing.company}] added field ${key}`);
+            }
+            continue;
           }
-        }
-        // For description: only replace if new is longer
-        if (refinedWork.description &&
-          (!existing.description || refinedWork.description.length > existing.description.length)) {
-          existing.description = refinedWork.description;
+
+          // Special logic for lists and long text
+          if (key === 'description' || key === 'achievements') {
+            const valStr = Array.isArray(value) ? value.join(' ') : String(value || '');
+            const curStr = Array.isArray(curVal) ? curVal.join(' ') : String(curVal || '');
+
+            if (valStr.length > curStr.length * 1.1 || valStr.toLowerCase().includes(curStr.toLowerCase().substring(0, 30))) {
+              (existing as any)[key] = value;
+              console.log(`[SafeRefine] Work [${existing.company}] enriched ${key}`);
+            }
+          }
+          // For core fields like job_title, company, start_date -> Keep original
         }
       } else {
         // New entry - add it
+        console.log(`[SafeRefine] Work: Added NEW entry for ${refinedWork.company}`);
         result.work_experience.push(refinedWork);
       }
     }
   }
 
-  // Education: same logic
+  // 3. Education: Smart Update
   if (refinedCV.education && refinedCV.education.length > 0) {
     if (!result.education) result.education = [];
 
     for (const refinedEdu of refinedCV.education) {
       const existingIdx = result.education.findIndex(
-        (e: any) => e.id === refinedEdu.id || e.institution === refinedEdu.institution
+        (e: any) =>
+          (refinedEdu.id && e.id === refinedEdu.id) ||
+          e.institution?.toLowerCase() === refinedEdu.institution?.toLowerCase()
       );
 
       if (existingIdx >= 0) {
         const existing = result.education[existingIdx];
         for (const [key, value] of Object.entries(refinedEdu)) {
-          if (value && (!existing[key] || existing[key] === '')) {
-            existing[key] = value;
+          if (value && (!(existing as any)[key] || (existing as any)[key] === '')) {
+            (existing as any)[key] = value;
           }
         }
       } else {
+        console.log(`[SafeRefine] Education: Added NEW entry for ${refinedEdu.institution}`);
         result.education.push(refinedEdu);
       }
     }
   }
 
-  // Skills: merge, never delete
+  // 4. Skills: Merge and Upgrade
   if (refinedCV.skills) {
     if (!result.skills) {
-      result.skills = Array.isArray(refinedCV.skills)
-        ? refinedCV.skills
-        : [];
+      result.skills = Array.isArray(refinedCV.skills) ? refinedCV.skills : [];
     } else {
-      const existingSkills = new Set(
-        (Array.isArray(result.skills) ? result.skills : []).map((s: any) => {
-          if (typeof s === 'string') return s.toLowerCase();
-          if (typeof s === 'object' && s !== null) return (s.name || '').toLowerCase();
-          return '';
-        })
-      );
+      const existingSkillsMap = new Map();
 
-      const refinedSkills: any[] = Array.isArray(refinedCV.skills) ? refinedCV.skills : [];
+      // Process existing skills (could be strings or objects)
+      const currentSkillsArray = Array.isArray(result.skills) ? result.skills : [];
+      currentSkillsArray.forEach((s: any, idx: number) => {
+        const name = typeof s === 'string' ? s : (s.name || '');
+        if (name) existingSkillsMap.set(name.toLowerCase(), { index: idx, value: s });
+      });
+
+      const refinedSkills = Array.isArray(refinedCV.skills) ? refinedCV.skills : [];
       for (const skill of refinedSkills) {
-        const skillName = typeof skill === 'string'
-          ? skill
-          : (typeof skill === 'object' && skill !== null ? (skill as any).name || '' : '');
-        if (skillName && !existingSkills.has(skillName.toLowerCase())) {
-          (result.skills as any[]).push(skill);
+        const name = typeof skill === 'string' ? skill : ((skill as any).name || '');
+        if (!name) continue;
+
+        const existing = existingSkillsMap.get(name.toLowerCase());
+        if (existing) {
+          // If existing is just a string and new is an object with more info -> Upgrade it
+          if (typeof existing.value === 'string' && typeof skill === 'object') {
+            (result.skills as any[])[existing.index] = skill;
+            console.log(`[SafeRefine] Skills: Upgraded "${name}" to object`);
+          }
+        } else {
+          // New skill
+          result.skills.push(skill);
         }
       }
     }
   }
 
-  // Languages: merge
+  // 5. Languages: Merge
   if (refinedCV.languages && refinedCV.languages.length > 0) {
     if (!result.languages) result.languages = [];
-    const existingLangs = new Set(result.languages.map((l: any) => l.language?.toLowerCase()));
+    const existingLangs = new Set(
+      result.languages.map((l: any) => l.language?.toLowerCase().trim())
+    );
 
     for (const lang of refinedCV.languages) {
-      if (!existingLangs.has(lang.language?.toLowerCase())) {
+      if (lang.language && !existingLangs.has(lang.language.toLowerCase().trim())) {
         result.languages.push(lang);
       }
     }
   }
 
-  // Certifications: merge
-  if (refinedCV.certifications && refinedCV.certifications.length > 0) {
-    if (!result.certifications) result.certifications = [];
-    result.certifications.push(...refinedCV.certifications);
-  }
-
-  // Projects: merge
+  // 6. Projects & Certifications: Simple Merge (Append new)
   if (refinedCV.projects && refinedCV.projects.length > 0) {
     if (!result.projects) result.projects = [];
-    result.projects.push(...refinedCV.projects);
+    // Only add if not seemingly already there (simple name check)
+    for (const proj of refinedCV.projects) {
+      if (!result.projects.some((p: any) => p.name === (proj as any).name)) {
+        result.projects.push(proj);
+      }
+    }
   }
 
-  // VALIDATION: Check for data loss
+  if (refinedCV.certifications && refinedCV.certifications.length > 0) {
+    if (!result.certifications) result.certifications = [];
+    for (const cert of refinedCV.certifications) {
+      if (!result.certifications.some((c: any) => c.name === (cert as any).name)) {
+        result.certifications.push(cert);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // FINAL SAFETY CHECKS (Do NOT remove)
+  // ═══════════════════════════════════════════════════════════
+
   const originalCounts = {
     work: originalCV.work_experience?.length || 0,
     edu: originalCV.education?.length || 0,
@@ -793,9 +870,9 @@ export function safeRefineCV(
     projects: result.projects?.length || 0,
   };
 
-  console.log('[SafeRefine] Integrity Check:', { original: originalCounts, result: resultCounts });
+  console.log('[SafeRefine] Final Integrity Check:', { original: originalCounts, result: resultCounts });
 
-  // CRITICAL FAIL-SAFE: If any major section disappeared, restore it entirely
+  // FAIL-SAFE: If any major section disappeared, restore it entirely from original
   if (resultCounts.work < originalCounts.work) {
     console.error('[SafeRefine] 🚨 Work count decreased! Restoring original.');
     result.work_experience = JSON.parse(JSON.stringify(originalCV.work_experience));
@@ -818,19 +895,17 @@ export function safeRefineCV(
     result.projects = JSON.parse(JSON.stringify(originalCV.projects));
   }
 
-  // Personal Info Safety: Ensure summary isn't shorter than original if it exists
+  // Header/Summary Safety: Ensure summary isn't significantly shorter than original
   if (originalCV.personal_info?.summary && result.personal_info?.summary) {
-    if (result.personal_info.summary.length < originalCV.personal_info.summary.length * 0.8) {
-      console.warn('[SafeRefine] ⚠️ Refined summary is significantly shorter. Restoring original.');
-      result.personal_info.summary = originalCV.personal_info.summary;
+    const origSummary = originalCV.personal_info.summary;
+    const newSummary = result.personal_info.summary;
+    if (newSummary.length < origSummary.length * 0.8 && !newSummary.toLowerCase().includes(origSummary.toLowerCase().substring(0, 50))) {
+      console.warn('[SafeRefine] ⚠️ Refined summary looks truncated. Restoring original summary.');
+      result.personal_info.summary = origSummary;
     }
   }
 
-  console.log('[REFINE-DEBUG-7] safeRefineCV result:', {
-    resultSections: Object.keys(result),
-    resultWorkCount: result.work_experience?.length,
-    resultSkillCount: result.skills?.length
-  });
+  console.log('[REFINE-DEBUG-7] safeRefineCV finished processing');
 
   return result;
 }
