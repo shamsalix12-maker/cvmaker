@@ -115,165 +115,147 @@ export class BlindExtractor {
     }
 
     private normalizeExtractedData(data: any, rawText: string): any {
-        // slugify helper for fuzzy matching
-        const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-0]/g, '');
+        // Deep recursive search helper
+        const findKey = (obj: any, target: string): any => {
+            if (!obj || typeof obj !== 'object') return undefined;
 
-        // Robust key lookup helper
-        const get = (obj: any, ...keys: string[]) => {
-            if (!obj) return null;
-            const targetSlugs = keys.map(slug);
+            // 1. Direct or fuzzy match at current level
+            const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-0]/g, '');
+            const targetSlug = slug(target);
 
-            // 1. Direct match
+            const keys = Object.keys(obj);
+            const foundKey = keys.find(k => slug(k) === targetSlug);
+            if (foundKey !== undefined) return obj[foundKey];
+
+            // 2. Search children
             for (const key of keys) {
-                if (obj[key] !== undefined) return obj[key];
+                const result = findKey(obj[key], target);
+                if (result !== undefined) return result;
             }
-
-            // 2. Fuzzy match
-            const objKeys = Object.keys(obj);
-            for (const s of targetSlugs) {
-                const foundKey = objKeys.find(k => slug(k) === s);
-                if (foundKey) return obj[foundKey];
-            }
-            return null;
+            return undefined;
         };
 
-        const identityRaw = get(data, 'identity', 'personal_info', 'personal_details', 'Identity', 'PersonalInfo') || {};
+        // Helpers to normalize specific types
+        const asString = (val: any) => {
+            if (Array.isArray(val)) return val.join('\n');
+            if (val === null || val === undefined) return null;
+            return String(val);
+        };
 
-        // Items normalization
-        const ensureIds = (input: any, prefix: string, fieldMap: Record<string, string[]>) => {
-            const arr = Array.isArray(input) ? input : (input && typeof input === 'object' && input.items ? input.items : []);
-            if (!Array.isArray(arr)) return [];
+        const asArray = (val: any) => {
+            if (Array.isArray(val)) return val;
+            if (val && typeof val === 'object' && val.items) return val.items;
+            return val ? [val] : [];
+        };
 
-            return arr.map((item, idx) => {
-                const normalizedItem: any = {
-                    id: item.id || get(item, 'id') || `${prefix}-${idx + 1}`,
-                };
-
-                // Map all fields according to fieldMap
-                Object.entries(fieldMap).forEach(([targetKey, sourceKeys]) => {
-                    let val = get(item, targetKey, ...sourceKeys);
-
-                    // Array to String conversion (Llama often returns lists for descriptions)
-                    if (Array.isArray(val) && ['description', 'content', 'summary', 'job_title', 'company', 'degree', 'institution', 'location'].includes(targetKey)) {
-                        val = val.join('\n');
-                    }
-
-                    normalizedItem[targetKey] = val;
-
-                    // Special handling for nested arrays (achievements, technologies)
-                    if (targetKey === 'achievements' && !Array.isArray(normalizedItem.achievements)) {
-                        normalizedItem.achievements = normalizedItem.achievements ? [normalizedItem.achievements] : [];
-                    }
-                    if (targetKey === 'technologies' && !Array.isArray(normalizedItem.technologies)) {
-                        normalizedItem.technologies = normalizedItem.technologies ? [normalizedItem.technologies] : [];
-                    }
-                });
-
-                // Special handling for boolean (is_current)
-                const currentVal = normalizedItem.is_current;
-                if (currentVal === undefined || currentVal === null) {
-                    normalizedItem.is_current = false;
-                } else if (typeof currentVal === 'string') {
-                    const s = currentVal.toLowerCase();
-                    normalizedItem.is_current = s.includes('now') || s.includes('present') || s.includes('current');
-                } else {
-                    normalizedItem.is_current = !!currentVal;
-                }
-
-                return normalizedItem;
-            });
+        const asBoolean = (val: any) => {
+            if (typeof val === 'boolean') return val;
+            if (typeof val === 'string') {
+                const s = val.toLowerCase();
+                return s.includes('now') || s.includes('present') || s.includes('current') || s === 'true';
+            }
+            return !!val;
         };
 
         const now = new Date().toISOString();
 
+        // 1. Identity section
+        const identityRaw = findKey(data, 'identity') || findKey(data, 'personal_info') || findKey(data, 'personal_details') || data;
+        const identity = {
+            full_name: asString(findKey(identityRaw, 'full_name') || findKey(identityRaw, 'name') || findKey(data, 'full_name')),
+            email: asString(findKey(identityRaw, 'email')),
+            phone: asString(findKey(identityRaw, 'phone') || findKey(identityRaw, 'phone_number')),
+            location: asString(findKey(identityRaw, 'location') || findKey(identityRaw, 'address') || findKey(identityRaw, 'place_of_birth')),
+            linkedin_url: asString(findKey(identityRaw, 'linkedin_url') || findKey(identityRaw, 'linkedin')),
+            website_url: asString(findKey(identityRaw, 'website_url') || findKey(identityRaw, 'website')),
+            summary: asString(findKey(identityRaw, 'summary') || findKey(identityRaw, 'objective') || findKey(identityRaw, 'research_summary')),
+        };
+
+        // 2. Array sections
+        const normalizeItems = (raw: any, prefix: string, schema: Record<string, 'string' | 'array' | 'boolean'>) => {
+            return asArray(raw).map((item: any, idx: number) => {
+                if (typeof item !== 'object') return { id: `${prefix}-${idx}`, description: String(item) };
+
+                const normalized: any = { id: item.id || `${prefix}-${idx + 1}` };
+                Object.entries(schema).forEach(([key, type]) => {
+                    const rawVal = findKey(item, key);
+                    if (type === 'string') normalized[key] = asString(rawVal);
+                    else if (type === 'array') normalized[key] = asArray(rawVal).map((v: any) => asString(v));
+                    else if (type === 'boolean') normalized[key] = asBoolean(rawVal);
+                });
+                return normalized;
+            });
+        };
+
+        const experience = normalizeItems(findKey(data, 'experience') || findKey(data, 'work_experience'), 'work', {
+            job_title: 'string',
+            company: 'string',
+            location: 'string',
+            start_date: 'string',
+            end_date: 'string',
+            is_current: 'boolean',
+            description: 'string',
+            achievements: 'array'
+        });
+
+        const education = normalizeItems(findKey(data, 'education'), 'edu', {
+            degree: 'string',
+            field_of_study: 'string',
+            institution: 'string',
+            location: 'string',
+            start_date: 'string',
+            end_date: 'string',
+            gpa: 'string',
+            description: 'string'
+        });
+
+        const skills = asArray(findKey(data, 'skills')).map((s: any) => {
+            if (typeof s === 'string') return s;
+            if (s && typeof s === 'object') return asString(findKey(s, 'name') || findKey(s, 'title') || JSON.stringify(s));
+            return String(s);
+        });
+
+        const projects = normalizeItems(findKey(data, 'projects'), 'proj', {
+            name: 'string',
+            description: 'string',
+            technologies: 'array',
+            url: 'string',
+            start_date: 'string',
+            end_date: 'string'
+        });
+
+        // 3. Generic sections
+        const normalizeGeneric = (key: string, prefix: string) => {
+            return normalizeItems(findKey(data, key), prefix, { title: 'string', content: 'string' });
+        };
+
         return {
             id: uuidv4(),
-            user_id: get(data, 'user_id') || 'unassigned',
+            user_id: String(findKey(data, 'user_id') || 'unassigned'),
             version: 1,
-            identity: {
-                full_name: get(identityRaw, 'full_name', 'name', 'fullName', 'Name', 'FullName') || get(data, 'full_name', 'name'),
-                email: get(identityRaw, 'email', 'Email'),
-                phone: get(identityRaw, 'phone', 'phone_number', 'PhoneNumber', 'Phone'),
-                location: get(identityRaw, 'location', 'address', 'Address', 'Location', 'PlaceOfBirth'),
-                linkedin_url: get(identityRaw, 'linkedin_url', 'linkedin', 'LinkedIn'),
-                website_url: get(identityRaw, 'website_url', 'website', 'Website'),
-                summary: get(identityRaw, 'summary', 'Summary', 'Objective', 'TechnicalSummary'),
-            },
-            experience: ensureIds(get(data, 'experience', 'work_experience', 'Experience', 'WorkExperience'), 'work', {
-                job_title: ['job_title', 'title', 'Title', 'JobTitle', 'Position'],
-                company: ['company', 'employer', 'Employer', 'Company', 'Institution'],
-                location: ['location', 'Location', 'Address'],
-                start_date: ['start_date', 'StartDate', 'From', 'start'],
-                end_date: ['end_date', 'EndDate', 'To', 'end'],
-                is_current: ['is_current', 'isCurrent', 'current'],
-                description: ['description', 'Description', 'Duties', 'Responsibilities', 'Content'],
-                achievements: ['achievements', 'Achievements', 'KeyAchievements'],
+            identity,
+            experience,
+            education,
+            skills,
+            projects,
+            certifications: normalizeItems(findKey(data, 'certifications'), 'cert', {
+                name: 'string',
+                issuer: 'string',
+                date_obtained: 'string',
+                expiry_date: 'string',
+                credential_id: 'string',
+                credential_url: 'string'
             }),
-            education: ensureIds(get(data, 'education', 'Education'), 'edu', {
-                degree: ['degree', 'Degree', 'Qualification'],
-                field_of_study: ['field_of_study', 'fieldOfStudy', 'major', 'Major', 'Subject'],
-                institution: ['institution', 'university', 'University', 'school', 'School', 'Institution'],
-                location: ['location', 'Location'],
-                start_date: ['start_date', 'StartDate', 'From'],
-                end_date: ['end_date', 'EndDate', 'To'],
-                gpa: ['gpa', 'GPA', 'Grade'],
-                description: ['description', 'Description', 'ThesisTitle', 'Thesis'],
-            }),
-            skills: Array.isArray(get(data, 'skills', 'Skills'))
-                ? get(data, 'skills', 'Skills').map((s: any) => {
-                    if (typeof s === 'string') return s;
-                    if (typeof s === 'object' && s !== null) {
-                        const name = get(s, 'name', 'Name', 'title', 'Title', 'skill', 'Skill');
-                        const desc = get(s, 'description', 'Description', 'details', 'Details', 'Level');
-                        return name && desc ? `${name}: ${desc}` : (name || desc || JSON.stringify(s));
-                    }
-                    return String(s);
-                })
-                : [],
-            projects: ensureIds(get(data, 'projects', 'Projects'), 'proj', {
-                name: ['name', 'title', 'Title', 'Name'],
-                description: ['description', 'Description'],
-                technologies: ['technologies', 'Technologies', 'Tools'],
-                url: ['url', 'URL', 'Link'],
-                start_date: ['start_date', 'StartDate'],
-                end_date: ['end_date', 'EndDate'],
-            }),
-            certifications: ensureIds(get(data, 'certifications', 'Certifications'), 'cert', {
-                name: ['name', 'title', 'Name'],
-                issuer: ['issuer', 'organization', 'Issuer'],
-                date_obtained: ['date_obtained', 'date', 'Date'],
-                expiry_date: ['expiry_date', 'expiry'],
-                credential_id: ['credential_id', 'id'],
-                credential_url: ['credential_url', 'url'],
-            }),
-            publications: ensureIds(get(data, 'publications', 'Publications'), 'pub', {
-                title: ['title', 'name', 'Title'],
-                content: ['content', 'description', 'Description', 'Details'],
-            }),
-            awards: ensureIds(get(data, 'awards', 'Awards'), 'award', {
-                title: ['title', 'name', 'Title'],
-                content: ['content', 'description', 'Description', 'Details'],
-            }),
-            teaching: ensureIds(get(data, 'teaching', 'Teaching'), 'teaching', {
-                title: ['title', 'name', 'course', 'Title'],
-                content: ['content', 'description', 'Description', 'Details'],
-            }),
-            clinical: ensureIds(get(data, 'clinical', 'Clinical'), 'clinical', {
-                title: ['title', 'name', 'Title'],
-                content: ['content', 'description', 'Description'],
-            }),
-            volunteering: ensureIds(get(data, 'volunteering', 'Volunteering'), 'volunteer', {
-                title: ['title', 'name', 'Title'],
-                content: ['content', 'description', 'Description'],
-            }),
-            other: ensureIds(get(data, 'other', 'Other'), 'other', {
-                title: ['title', 'name', 'Section'],
-                content: ['content', 'description', 'Description', 'Details'],
-            }),
+            publications: normalizeGeneric('publications', 'pub'),
+            awards: normalizeGeneric('awards', 'award'),
+            teaching: normalizeGeneric('teaching', 'teach'),
+            clinical: normalizeGeneric('clinical', 'clin'),
+            volunteering: normalizeGeneric('volunteering', 'vol'),
+            other: normalizeGeneric('other', 'other'),
             raw_text: rawText,
             created_at: now,
             updated_at: now,
-            metadata: get(data, 'metadata', 'Metadata') || {},
+            metadata: findKey(data, 'metadata') || {},
         };
     }
 }
