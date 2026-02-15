@@ -13,10 +13,11 @@ Your task is to extract ALL factual information from the provided CV text into a
 JSON SCHEMA REQUISITES:
 1. Use snake_case for all keys (e.g., "full_name", "job_title").
 2. Standard sections: identity, experience, education, skills, projects, certifications, publications, awards, teaching, clinical, volunteering, other.
-3. PRESERVE every piece of data. Do NOT summarize or condense.
-4. NO HALLUCINATION. Do not invent details not present in the text.
-5. Use null for missing fields.
-6. Return ONLY valid JSON. No explanations or markdown.`;
+3. DATA SEPARATION: If significant projects are described within a work experience block, extract them into the "projects[]" section for better structure, but preserve the high-level experience entry.
+4. PRESERVE every piece of data. Do NOT summarize or condense.
+5. NO HALLUCINATION. Do not invent details not present in the text.
+6. Use null for missing fields.
+7. Return ONLY valid JSON. No explanations or markdown.`;
 }
 
 export function buildBlindExtractionUserPrompt(rawText: string): string {
@@ -54,10 +55,11 @@ OUTPUT FORMAT:
 Return a JSON object with: { "overall_score": 0-100, "items": [...] }
 Each item in "items" must have: { "field_path", "exists", "completeness_score", "quality_score", "issues", "recommendations" }.
 
-RULES:
-1. Use snake_case keys.
-2. ONLY assessment, NO rewriting.
-3. Do NOT invent data.
+CRITICAL RULES:
+1. CONTEXT AWARENESS: Before marking a section as "exists: false", check if that information is already detailed in ANOTHER section. 
+   - Example: If "projects" is empty but "experience" describes significant projects, mark "projects" as "exists: true" (possibly with lower completeness) rather than totally missing.
+2. Use snake_case keys.
+3. ONLY assessment, NO rewriting.
 4. Return ONLY valid JSON. No markdown.`;
 }
 
@@ -85,10 +87,11 @@ Each item in "items" must have: { "field", "guidance_text", "example", "skip_all
 
 RULES:
 1. Use snake_case keys.
-2. Provide clear, direct guidance.
-3. Include realistic examples.
-4. Respect the "skip_allowed" rule (default true).
-5. Return ONLY valid JSON. No markdown.`;
+2. NO REDUNDANCY: Do NOT ask for information that is already present in other parts of the CV. 
+3. Provide clear, direct guidance.
+4. Include realistic examples.
+5. Respect the "skip_allowed" rule (default true).
+6. Return ONLY valid JSON. No markdown.`;
 }
 
 export function buildGapIntelligenceUserPrompt(fieldAuditJson: string, domainRules: string): string {
