@@ -162,7 +162,17 @@ export class BlindExtractor {
             },
             experience: ensureIds(get(data, 'experience', 'work_experience', 'Experience', 'WorkExperience'), 'work'),
             education: ensureIds(get(data, 'education', 'Education'), 'edu'),
-            skills: Array.isArray(get(data, 'skills', 'Skills')) ? get(data, 'skills', 'Skills') : [],
+            skills: Array.isArray(get(data, 'skills', 'Skills'))
+                ? get(data, 'skills', 'Skills').map((s: any) => {
+                    if (typeof s === 'string') return s;
+                    if (typeof s === 'object' && s !== null) {
+                        const name = get(s, 'name', 'Name', 'title', 'Title');
+                        const desc = get(s, 'description', 'Description', 'details', 'Details');
+                        return name && desc ? `${name}: ${desc}` : (name || desc || JSON.stringify(s));
+                    }
+                    return String(s);
+                })
+                : [],
             projects: ensureIds(get(data, 'projects', 'Projects'), 'proj'),
             certifications: ensureIds(get(data, 'certifications', 'Certifications'), 'cert'),
             publications: ensureIds(get(data, 'publications', 'Publications'), 'pub'),

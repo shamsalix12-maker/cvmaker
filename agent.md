@@ -23,3 +23,4 @@
 - **API KEY RESOLUTION**: Applied user's experimental API key. Identified that standard IDs like `gemini-1.5-flash` return 404, while `gemini-2.5-flash` has a strict 20-request/day quota.
 - **FINAL STABILITY FIX**: Switched default model to `gemini-flash-latest`, which is fully supported by the new key and provides a high, reliable quota.
 - **GROQ INTEGRATION**: Successfully integrated Groq as an alternative provider and configured the environment with the user's Groq API key.
+- **GROQ STABILIZATION**: Hardened the V2 pipeline (`BlindExtractor`, `Auditor`, `GapGenerator`) to be case-insensitive and format-resilient, directly fixing the "hollow extraction" (0% score) issue caused by Llama-3.3's varied JSON output.
