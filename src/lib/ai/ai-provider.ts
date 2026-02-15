@@ -64,57 +64,101 @@ export abstract class BaseAIProvider implements AIProvider {
     ): Promise<string>;
 
     parseJsonResponse<T>(response: string): T | null {
+        if (!response) return null;
+
+        let jsonStr = response.trim();
+
+        // Remove markdown code blocks if present
+        const mdMatch = jsonStr.match(
+            /```(?:json)?\s*([\s\S]*?)\s*```/
+        );
+        if (mdMatch) {
+            jsonStr = mdMatch[1].trim();
+        }
+
+        // Try direct parse first
         try {
-            // First try direct JSON.parse for clean responses
-            try {
-                return JSON.parse(response) as T;
-            } catch {
-                // Ignore and continue to extraction logic
-            }
-
-            // Extract JSON string
-            let jsonStr = response;
-
-            // 1. Try to find markdown code blocks first (standard AI behavior)
-            const markdownMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-            if (markdownMatch) {
-                jsonStr = markdownMatch[1];
-            } else {
-                // 2. No code blocks - try to find the outermost object or array
-                const startObject = response.indexOf('{');
-                const endObject = response.lastIndexOf('}');
-                const startArray = response.indexOf('[');
-                const endArray = response.lastIndexOf(']');
-
-                // Heuristic: pick the outermost structure
-                let start = -1;
-                let end = -1;
-
-                if (startObject !== -1 && endObject !== -1) {
-                    if (startArray === -1 || startObject < startArray) {
-                        start = startObject;
-                        end = endObject;
-                    } else {
-                        start = startArray;
-                        end = endArray;
-                    }
-                } else if (startArray !== -1 && endArray !== -1) {
-                    start = startArray;
-                    end = endArray;
-                }
-
-                if (start !== -1 && end !== -1 && end > start) {
-                    jsonStr = response.substring(start, end + 1);
-                }
-            }
-
-            // 3. Try to repair common JSON issues
-            jsonStr = this.repairJson(jsonStr);
-
             return JSON.parse(jsonStr) as T;
         } catch (e) {
-            console.error('[BaseAIProvider] Failed to parse JSON response:', e);
-            console.error('[BaseAIProvider] Raw response head:', response.substring(0, 500));
+            // If failed, try to extract JSON object
+            console.warn(
+                '[BaseAIProvider] Direct parse failed, ' +
+                'attempting extraction...'
+            );
+        }
+
+        // Find the main JSON object boundaries
+        const firstBrace = jsonStr.indexOf('{');
+        if (firstBrace === -1) {
+            console.error(
+                '[BaseAIProvider] No JSON object found'
+            );
+            return null;
+        }
+
+        // Find matching closing brace by counting
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+        let endPos = -1;
+
+        for (let i = firstBrace; i < jsonStr.length; i++) {
+            const char = jsonStr[i];
+
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+
+            if (char === '\\' && inString) {
+                escaped = true;
+                continue;
+            }
+
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString) continue;
+
+            if (char === '{') depth++;
+            if (char === '}') {
+                depth--;
+                if (depth === 0) {
+                    endPos = i;
+                    break;
+                }
+            }
+        }
+
+        if (endPos === -1) {
+            console.error(
+                '[BaseAIProvider] Could not find matching ' +
+                'closing brace'
+            );
+            return null;
+        }
+
+        // Extract only the JSON portion
+        const cleanJson = jsonStr.substring(
+            firstBrace, endPos + 1
+        );
+
+        try {
+            const result = JSON.parse(cleanJson) as T;
+            console.log(
+                '[BaseAIProvider] Successfully parsed after ' +
+                'extraction. Removed',
+                jsonStr.length - cleanJson.length,
+                'extra characters'
+            );
+            return result;
+        } catch (e2) {
+            console.error(
+                '[BaseAIProvider] Extraction parse also failed:',
+                (e2 as Error).message
+            );
             return null;
         }
     }
@@ -125,25 +169,25 @@ export abstract class BaseAIProvider implements AIProvider {
     private repairJson(jsonStr: string): string {
         // Remove trailing commas before } or ]
         jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-        
+
         // Fix unescaped quotes in string values (basic attempt)
         // This is a simple heuristic - look for patterns like "text with "quotes" inside"
-        
+
         // Fix missing quotes around property names (rare but happens)
         // jsonStr = jsonStr.replace(/(\{|\,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-        
+
         // Remove control characters except newline and tab
         jsonStr = jsonStr.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-        
+
         // Fix multiple consecutive commas
         jsonStr = jsonStr.replace(/,+/g, ',');
-        
+
         // Fix missing closing brackets - count open vs close
         const openBraces = (jsonStr.match(/{/g) || []).length;
         const closeBraces = (jsonStr.match(/}/g) || []).length;
         const openBrackets = (jsonStr.match(/\[/g) || []).length;
         const closeBrackets = (jsonStr.match(/]/g) || []).length;
-        
+
         // Add missing closing brackets
         for (let i = 0; i < openBraces - closeBraces; i++) {
             jsonStr += '}';
@@ -151,7 +195,7 @@ export abstract class BaseAIProvider implements AIProvider {
         for (let i = 0; i < openBrackets - closeBrackets; i++) {
             jsonStr += ']';
         }
-        
+
         return jsonStr;
     }
 }

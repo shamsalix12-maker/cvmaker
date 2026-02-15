@@ -78,5 +78,15 @@
     - **Traceability**: Added specific `[SafeRefine]` logs indicating why each field was updated or rejected.
 - **Safety**: Maintained all previous integrity checks, including section count validation and summary truncation protection.
 
+### Enhanced JSON Parsing in AI Provider (2026-02-15)
+- **Problem**: AI providers sometimes return valid JSON followed by extra text, causing `JSON.parse` to fail.
+- **Solution**: Rewrote `parseJsonResponse` in `BaseAIProvider` (`src/lib/ai/ai-provider.ts`) to use brace-counting logic.
+- **Logic**:
+    - Trims response and removes markdown code blocks.
+    - If direct parse fails, it finds the first `{` and identifies the matching closing `}` by tracking braces, strings, and escape characters.
+    - Extracts only the substring between the correct braces, effectively ignoring any "conversational" text before or after the JSON payload.
+- **Impact**: Increased robustness of AI interactions, especially when models add explanations or notes outside the requested JSON format.
+
+
 
 
