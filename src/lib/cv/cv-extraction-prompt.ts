@@ -416,54 +416,46 @@ CRITICAL: CV LANGUAGE = ${cvLangName}
 ═══════════════════════════════════════════════════════════════
 
 ═══════════════════════════════════════════════════════════════
-CRITICAL: NEVER DELETE OR MODIFY EXISTING DATA
+CRITICAL: PRESERVE AND MERGE DATA INTELLIGENTLY
 ═══════════════════════════════════════════════════════════════
-RULE #1: PRESERVE EVERYTHING
-- You MUST return ALL existing CV data EXACTLY as it was
-- DO NOT delete, remove, or truncate ANY existing data
-- DO NOT modify, rewrite, or "improve" existing text
-- DO NOT summarize or condense existing content
-- If the CV has 10 work experiences, return ALL 10
-- If a description is 500 words, return ALL 500 words
-- The ONLY changes allowed are:
-  1. Adding NEW data from user input (verbatim)
-  2. Marking fields that user skipped as empty
+RULE #1: PRESERVE ALL EXISTING DATA
+- You MUST return ALL existing CV data. Do NOT delete, remove, or truncate ANY existing data.
+- If the CV has 10 work experiences, return ALL 10.
+- If a description is 500 words, return ALL 500 words exactly.
 
-RULE #2: ADD ONLY - NEVER MODIFY
-- ONLY add user's input exactly as provided (verbatim)
-- DO NOT expand, improve, or modify user's input
-- DO NOT add action verbs, metrics, or achievements not mentioned
-- DO NOT "professionalize" or "enhance" any content
+RULE #2: SMART INTEGRATION - NO DUPLICATION
+- Integrate user input to resolve gaps, but AVOID DUPLICATION.
+- Before adding info: Check if synonyms or the same information already exists in that field/section.
+- If info is already present → skip adding it or merge it to complete the existing sentence/fact.
+- DO NOT repeat bullet points or achievements.
 
-RULE #3: NO HALLUCINATION
-- NEVER invent any information
-- NEVER suggest improvements that add fictional content
-- NEVER create fictional achievements, metrics, or descriptions
+RULE #3: VERBATIM BUT PROFESSIONAL
+- Add new info exactly as provided by the user, but ensure it flows correctly in the JSON structure.
+- DO NOT "professionalize" by hallucinating new tasks, but do ensure valid grammar in ${cvLangName}.
+
+RULE #4: LANGUAGES SECTION IS CRITICAL
+- The "languages" array MUST BE PRESERVED. If it exists in the original JSON, it MUST exist in your output.
+- DO NOT move languages to "skills" or "additional_sections".
 
 RESPONSE FORMAT:
 {
   "extracted_data": { 
     // MUST contain ALL original data PLUS any new user input
-    // DO NOT remove or modify any existing fields
+    // DO NOT remove or modify any existing fields (personal_info, work_experience, education, skills, certifications, projects, languages)
   },
-  "suggested_improvements": [],  // Optional suggestions, NOT applied
-  "translations_applied": [],    // Any translations done
+  "suggested_improvements": [],  // Quality improvements (not applied to extracted_data)
+  "translations_applied": [],    // List of translations done
   "gap_analysis": { ... },
   "metadata": { ... }
 }
 
-CRITICAL CHECKLIST BEFORE RESPONDING:
-□ Did I include ALL original personal_info fields?
-□ Did I include ALL original work_experience entries?
-□ Did I include ALL original education entries?
-□ Did I include ALL original skills?
-□ Did I include ALL original certifications, projects, languages?
-□ Did I preserve ALL original descriptions and text exactly as they were?
-□ Did I only ADD new information, never REMOVE or MODIFY?
+CRITICAL CHECKLIST:
+□ Are ALL "languages" from the original CV still in the output?
+□ Did I avoid repeating information already present in work experience or summary?
+□ Did I include ALL original work entries?
+□ Is EVERYTHING in ${cvLangName}?
 
-If you answer NO to any of these, your response is WRONG.
-
-Respond with valid JSON only containing ALL original data plus any additions.`;
+Respond with valid JSON only.`;
 }
 
 /**

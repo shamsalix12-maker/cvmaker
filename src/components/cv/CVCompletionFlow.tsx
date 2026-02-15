@@ -517,11 +517,17 @@ export function CVCompletionFlow({
           console.log('[DEBUG-FLOW-3] result.cv.work_experience count:', result.cv.work_experience?.length);
           console.log('[DEBUG-FLOW-4] result.cv.work_experience[0]:', JSON.stringify(result.cv.work_experience?.[0])?.substring(0, 300));
 
+          // Skip review step if no suggestions or translations
+          const hasImprovements = (result.suggestedImprovements && result.suggestedImprovements.length > 0) ||
+            (result.translationsApplied && result.translationsApplied.length > 0);
+
           setState(prev => ({
             ...prev,
             extracted_cv: result.cv,
             gap_analysis: result.gapAnalysis || prev.gap_analysis,
-            current_step: 'improvement_review',
+            suggested_improvements: result.suggestedImprovements || [],
+            translations_applied: result.translationsApplied || [],
+            current_step: hasImprovements ? 'improvement_review' : 'review',
           }));
         } else {
           throw new Error(result.error || result.extractionNotes || 'Refinement failed');
