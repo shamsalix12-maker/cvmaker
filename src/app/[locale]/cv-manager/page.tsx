@@ -41,7 +41,7 @@ export default function CVManagerPage() {
   };
 
   const aiProvider = 'google';
-  const aiModel = 'gemini-2.5-flash';
+  const aiModel = 'gemini-flash-latest';
 
   return (
     <AuthGuard>

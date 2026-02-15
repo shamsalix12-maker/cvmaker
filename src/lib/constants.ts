@@ -98,7 +98,7 @@ export const SUPPORTED_AI_PROVIDERS: {
 export const DEFAULT_MODELS: Record<AIProviderName, string> = {
     openai: 'gpt-4o',
     anthropic: 'claude-3-5-sonnet-20241022',
-    google: 'gemini-2.5-flash',
+    google: 'gemini-flash-latest',
 };
 
 // ─────────────────────────────────────────────────────────────────

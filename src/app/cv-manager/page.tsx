@@ -12,7 +12,7 @@ export default function CVManagerTestPage() {
     <CVCompletionFlow
       locale="fa"
       aiProvider="google"
-      aiModel="gemini-2.5-flash"
+      aiModel="gemini-flash-latest"
       onComplete={handleComplete}
     />
   );
