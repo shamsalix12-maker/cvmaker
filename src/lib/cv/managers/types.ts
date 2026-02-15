@@ -11,6 +11,15 @@ import {
     CVFieldStatus
 } from '@/lib/types';
 
+export enum CVExtractionStage {
+    PERSONAL_INFO = 'personal_info',
+    WORK_EXPERIENCE = 'work_experience',
+    EDUCATION = 'education',
+    SKILLS = 'skills',
+    OTHERS = 'others',
+    FULL = 'full'
+}
+
 export interface EnhancedCVExtractionResult {
     success: boolean;
     cv: Partial<ComprehensiveCV> | null;
@@ -27,6 +36,7 @@ export interface EnhancedCVExtractionResult {
     translationsApplied: TranslationApplied[];
     cvLanguage?: string;
     managerVersion?: string;
+    extractionStage?: CVExtractionStage;
     error?: string;
 }
 

@@ -240,7 +240,7 @@ export class V1StableManager implements CVManager {
     }
 
     // Helper methods migrated from cv-extractor.ts
-    private transformExtractedData(parsed: any, rawText?: string): Partial<ComprehensiveCV> {
+    protected transformExtractedData(parsed: any, rawText?: string): Partial<ComprehensiveCV> {
         const data = parsed.extracted_data || parsed;
         const pi = data.personal_info || data.personal || data.profile || {};
         const personal_info = {
@@ -306,7 +306,7 @@ export class V1StableManager implements CVManager {
         return { personal_info, work_experience, education, skills, certifications, languages, projects, raw_text: rawText };
     }
 
-    private transformGapAnalysis(parsed: any, selectedDomains: CVDomainId[]) {
+    protected transformGapAnalysis(parsed: any, selectedDomains: CVDomainId[]) {
         const ga = parsed.gap_analysis || {};
         return {
             overall_score: ga.overall_score || 0,
@@ -343,7 +343,7 @@ export class V1StableManager implements CVManager {
         };
     }
 
-    private buildComprehensiveGaps(cv: Partial<ComprehensiveCV>, selectedDomains: CVDomainId[], aiGaps: any[]) {
+    protected buildComprehensiveGaps(cv: Partial<ComprehensiveCV>, selectedDomains: CVDomainId[], aiGaps: any[]) {
         const gaps: any[] = [];
         const addGap = (section: string, field: string, label: string, priority: GapSeverity, suggestion: string, category: GapCategory) => {
             gaps.push({
@@ -374,12 +374,12 @@ export class V1StableManager implements CVManager {
         return gaps.sort((a, b) => this.severityToScore(b.severity) - this.severityToScore(a.severity));
     }
 
-    private severityToScore(s: string) {
+    protected severityToScore(s: string) {
         const scores: any = { critical: 4, important: 3, recommended: 2, optional: 1 };
         return scores[s] || 0;
     }
 
-    private transformMetadata(parsed: any) {
+    protected transformMetadata(parsed: any) {
         const m = parsed.metadata || {};
         return {
             confidence: m.confidence || 0,
@@ -391,7 +391,7 @@ export class V1StableManager implements CVManager {
         };
     }
 
-    private transformSuggestedImprovements(improvements: any[]): SuggestedImprovement[] {
+    protected transformSuggestedImprovements(improvements: any[]): SuggestedImprovement[] {
         return this.ensureArray(improvements).map((imp: any) => ({
             id: imp.id || `imp-${Math.random().toString(36).substr(2, 9)}`,
             field_path: imp.field_path || '',
@@ -404,7 +404,7 @@ export class V1StableManager implements CVManager {
         }));
     }
 
-    private transformTranslationsApplied(translations: any[]): TranslationApplied[] {
+    protected transformTranslationsApplied(translations: any[]): TranslationApplied[] {
         return this.ensureArray(translations).map((t: any) => ({
             id: t.id || `translation-${Math.random().toString(36).substr(2, 9)}`,
             field_path: t.field_path || '',
@@ -417,7 +417,7 @@ export class V1StableManager implements CVManager {
         }));
     }
 
-    private extractPartialData(response: string) {
+    protected extractPartialData(response: string) {
         // Basic regex-based fallback if JSON is broken but contains key patterns
         const result: any = { extracted_data: {} };
         const nameMatch = response.match(/"full_name"\s*:\s*"([^"]+)"/);
@@ -425,11 +425,11 @@ export class V1StableManager implements CVManager {
         return result;
     }
 
-    private buildErrorResult(rawText: string, aiProvider: AIProviderName, aiModel: string, detectedDomains: any[], error: string, currentCV: any = null): EnhancedCVExtractionResult {
+    protected buildErrorResult(rawText: string, aiProvider: AIProviderName, aiModel: string, detectedDomains: any[], error: string, currentCV: any = null): EnhancedCVExtractionResult {
         return {
             success: false,
             cv: currentCV,
-            fieldStatuses: {},
+            fieldStatuses: [],
             confidence: 0,
             rawText,
             aiProvider,
@@ -444,9 +444,9 @@ export class V1StableManager implements CVManager {
         };
     }
 
-    private firstNonEmpty(...vals: any[]) { return vals.find(v => v !== null && v !== undefined && v !== ''); }
-    private ensureArray(val: any) { return Array.isArray(val) ? val : []; }
-    private ensureStringArray(val: any) {
+    protected firstNonEmpty(...vals: any[]) { return vals.find(v => v !== null && v !== undefined && v !== ''); }
+    protected ensureArray(val: any) { return Array.isArray(val) ? val : []; }
+    protected ensureStringArray(val: any) {
         if (Array.isArray(val)) return val.map(String);
         if (typeof val === 'string') return [val];
         return [];

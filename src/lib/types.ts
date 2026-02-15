@@ -372,4 +372,6 @@ export interface CVExtractionRequest {
     aiProvider: AIProviderName;
     aiModel: string;
     language?: 'en' | 'fa' | 'auto';
+    extractionStage?: string;
+    existingCV?: Partial<ComprehensiveCV>;
 }

@@ -223,4 +223,10 @@ export interface CVCompletionState {
   translations_applied: TranslationApplied[];
   /** زبان اصلی CV */
   cv_language: string;
+  /** نسخه موتور استخراج */
+  manager_version?: string;
+  /** مرحله استخراج فعلی (برای نسخه ۲) */
+  current_stage?: string;
+  /** لیست مراحل استخراج (برای نسخه ۲) */
+  extraction_stages?: string[];
 }

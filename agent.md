@@ -126,6 +126,17 @@
 - **Deterministic Prioritization**: Maintained severity-based sorting (`critical` to `optional`).
 - **Gap Resolution Bug Fix**: Fixed a bug in `GapResolutionWizard.tsx` where the "Skip" confirmation for critical gaps wasn't working due to a missing dependency in the `handleSkip` callback.
 
+### V2 Sequential Extraction Implementation (2026-02-16)
+- **Status**: Completed.
+- **Backend Enhancements**:
+    - **Staged Extraction**: Implemented section-specific extraction in `V2ExperimentalManager` (Personal Info, Work, Education, Skills, Others).
+    - **Stage-Aware Prompts**: Added `buildStageExtractionPrompt` in `cv-extraction-prompt.ts` to focus AI attention.
+    - **Incremental Context**: Enabled passing `existingCV` to the AI for maintain consistency during sequential stages.
+- **Frontend Enhancements**:
+    - **Iterative Flow**: Updated `CVCompletionFlow.tsx` to loop through extraction and resolution for each section.
+    - **Progress UI**: Added a visual stage indicator to show the user's progress through the sequential extraction process.
+    - **Refinement Chaining**: Linked `handleResolutionComplete` to automatically advance to the next section's extraction.
+
 ### Parallel CV Manager System Implementation (2026-02-16)
 - **Status**: Completed.
 - **Modular Architecture**:

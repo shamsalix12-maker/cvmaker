@@ -21,6 +21,14 @@ import { GapResolutionWizard } from './GapResolutionWizard';
 import { ClassificationReview } from './ClassificationReview';
 import { ImprovementReview } from './ImprovementReview';
 
+const V2_EXTRACTION_STAGES = [
+  'personal_info',
+  'work_experience',
+  'education',
+  'skills',
+  'others'
+];
+
 // ═══════════════════════════════════════════
 // Helper Functions for Safe Merge
 // ═══════════════════════════════════════════
@@ -226,6 +234,7 @@ interface CVCompletionFlowProps {
     cvLanguage?: string;
     provider?: any;
     model?: string;
+    managerVersion?: string;
   }) => Promise<any>;
   existingCV?: Partial<ComprehensiveCV>;
   initialDomains?: CVDomainId[];
@@ -292,6 +301,8 @@ export function CVCompletionFlow({
     translations_applied: [],
     cv_language: 'en',
     manager_version: initialManagerVersion || CVManagerVersion.V1_STABLE,
+    current_stage: (initialManagerVersion || CVManagerVersion.V1_STABLE) === CVManagerVersion.V2_EXPERIMENTAL ? V2_EXTRACTION_STAGES[0] : undefined,
+    extraction_stages: (initialManagerVersion || CVManagerVersion.V1_STABLE) === CVManagerVersion.V2_EXPERIMENTAL ? V2_EXTRACTION_STAGES : undefined,
   });
 
   // Sync with prop if changed
@@ -350,7 +361,9 @@ export function CVCompletionFlow({
     }
   }, []);
 
-  const handleExtract = useCallback(async () => {
+  const handleExtract = useCallback(async (forcedStage?: string) => {
+    const stageToUse = forcedStage || state.current_stage;
+
     if (!selectedFile && !rawText.trim()) {
       setError(locale === 'fa'
         ? 'لطفاً فایل آپلود کنید یا متن رزومه را وارد کنید'
@@ -377,7 +390,14 @@ export function CVCompletionFlow({
         state.selected_domains.length > 0 ? state.selected_domains : ['general']
       ));
       formData.append('cvLanguage', state.cv_language);
-      formData.append('managerVersion', (state as any).manager_version);
+      formData.append('managerVersion', state.manager_version || '');
+
+      if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL && stageToUse) {
+        formData.append('extractionStage', stageToUse);
+        if (state.extracted_cv) {
+          formData.append('existingCV', JSON.stringify(state.extracted_cv));
+        }
+      }
 
       const response = await fetch('/api/cv/extract', {
         method: 'POST',
@@ -423,7 +443,33 @@ export function CVCompletionFlow({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedFile, rawText, aiProvider, aiModel, state.selected_domains, locale, goToStep]);
+  }, [selectedFile, rawText, aiProvider, aiModel, state.selected_domains, state.cv_language, state.manager_version, state.current_stage, state.extracted_cv, locale, goToStep]);
+
+  const handleNextStage = useCallback(() => {
+    let nextStage: string | undefined;
+
+    setState(prev => {
+      const stages = prev.extraction_stages || [];
+      const currentIndex = stages.indexOf(prev.current_stage || '');
+
+      if (currentIndex !== -1 && currentIndex < stages.length - 1) {
+        nextStage = stages[currentIndex + 1];
+        return {
+          ...prev,
+          current_stage: nextStage,
+        };
+      } else {
+        return {
+          ...prev,
+          current_step: 'improvement_review'
+        };
+      }
+    });
+
+    if (nextStage) {
+      handleExtract(nextStage);
+    }
+  }, [state.extraction_stages, state.current_stage, handleExtract]);
 
   // ─── Step 4-5: Gap Resolution ───
 
@@ -476,7 +522,11 @@ export function CVCompletionFlow({
 
   const handleResolutionComplete = useCallback(async () => {
     if (!state.gap_analysis || !state.extracted_cv) {
-      goToStep('improvement_review');
+      if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL) {
+        handleNextStage();
+      } else {
+        goToStep('improvement_review');
+      }
       return;
     }
 
@@ -526,14 +576,25 @@ export function CVCompletionFlow({
           const hasImprovements = (result.suggestedImprovements && result.suggestedImprovements.length > 0) ||
             (result.translationsApplied && result.translationsApplied.length > 0);
 
-          setState(prev => ({
-            ...prev,
-            extracted_cv: result.cv,
-            gap_analysis: result.gapAnalysis || prev.gap_analysis,
-            suggested_improvements: result.suggestedImprovements || [],
-            translations_applied: result.translationsApplied || [],
-            current_step: hasImprovements ? 'improvement_review' : 'review',
-          }));
+          if (state.manager_version === CVManagerVersion.V2_EXPERIMENTAL) {
+            setState(prev => ({
+              ...prev,
+              extracted_cv: result.cv || prev.extracted_cv,
+              gap_analysis: result.gapAnalysis || prev.gap_analysis,
+              suggested_improvements: [...prev.suggested_improvements, ...(result.suggestedImprovements || [])],
+              translations_applied: [...prev.translations_applied, ...(result.translationsApplied || [])],
+            }));
+            handleNextStage();
+          } else {
+            setState(prev => ({
+              ...prev,
+              extracted_cv: result.cv,
+              gap_analysis: result.gapAnalysis || prev.gap_analysis,
+              suggested_improvements: result.suggestedImprovements || [],
+              translations_applied: result.translationsApplied || [],
+              current_step: hasImprovements ? 'improvement_review' : 'review',
+            }));
+          }
         } else {
           throw new Error(result.error || result.extractionNotes || 'Refinement failed');
         }
@@ -555,7 +616,7 @@ export function CVCompletionFlow({
     } finally {
       setIsLoading(false);
     }
-  }, [state.gap_analysis, state.extracted_cv, state.cv_language, goToStep, refineCV, aiProvider, aiModel, state.selected_domains]);
+  }, [state.gap_analysis, state.extracted_cv, state.cv_language, goToStep, refineCV, aiProvider, aiModel, state.selected_domains, state.manager_version, handleNextStage]);
 
   // ─── Step 6: Review & Save ───
 
@@ -714,6 +775,39 @@ export function CVCompletionFlow({
         </div>
       </div>
 
+      {/* V2 Sequential Flow Progress Indicator */}
+      {state.manager_version === CVManagerVersion.V2_EXPERIMENTAL && state.current_stage && (
+        <div className="bg-blue-600/10 border-b border-blue-200 dark:border-blue-800 py-2">
+          <div className="max-w-5xl mx-auto px-4 flex items-center justify-between text-xs sm:text-sm">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="font-medium text-blue-900 dark:text-blue-100 italic">
+                {locale === 'fa' ? 'استخراج مرحله‌ای فعال است' : 'Sequential Extraction Active'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-4">
+              {V2_EXTRACTION_STAGES.map((s, idx) => {
+                const isCurrent = s === state.current_stage;
+                const isPast = V2_EXTRACTION_STAGES.indexOf(state.current_stage!) > idx;
+                return (
+                  <div key={s} className="flex items-center gap-1">
+                    <div className={`
+                      h-2 w-8 sm:w-16 rounded-full transition-colors 
+                      ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-blue-300 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-800'}
+                    `} />
+                    {isCurrent && (
+                      <span className="font-bold text-blue-700 dark:text-blue-300 hidden md:inline ml-1 capitalize">
+                        {s.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ═══ Content ═══ */}
       <div className="max-w-5xl mx-auto px-4 py-8">
 
@@ -844,8 +938,8 @@ export function CVCompletionFlow({
                   <button
                     onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V1_STABLE }))}
                     className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V1_STABLE
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                       }`}
                   >
                     {locale === 'fa' ? 'پایدار (V1)' : 'Stable (V1)'}
@@ -853,8 +947,8 @@ export function CVCompletionFlow({
                   <button
                     onClick={() => setState(prev => ({ ...prev, manager_version: CVManagerVersion.V2_EXPERIMENTAL }))}
                     className={`px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${(state as any).manager_version === CVManagerVersion.V2_EXPERIMENTAL
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                       }`}
                   >
                     {locale === 'fa' ? 'آزمایشی (V2)' : 'Experimental (V2)'}
