@@ -114,8 +114,13 @@
 - **Temperature Locked to 0**: Set `temperature: 0` in `cv-extractor.ts` for both extraction and refinement to ensure maximum determinism in AI responses.
 - **maxTokens Logic Fixed**: Removed a hardcoded `65536` override in `google-ai-provider.ts` that was ignoring the `32768` value sent from the CV extractor. The provider now correctly honors the passed `config.maxTokens` or `options.maxTokens`.
 
-### Refinement Validation (2026-02-15)
+### Refinement & Gap Analysis (2026-02-15)
 - **Robust Gap Mode Validation**: Added specialized validation logic in `refineCVWithAI` (`cv-extractor.ts`). When resolving gaps, the system now explicitly verifies that the AI hasn't accidentally removed or truncated existing work experience, education, skills, certifications, or projects. If a decrease in data is detected, the original data is restored to prevent data loss.
+- **3-Layer Gap Detection System**: Implemented a comprehensive gap detection architecture in `cv-extractor.ts`:
+    1.  **Layer 1 (Missing)**: Validates CV against domain-specific critical fields and required sections from `cv-domains.ts`.
+    2.  **Layer 2 (Incomplete)**: Rule-based detection for missing details in common sections (e.g., summary length, missing contact info, work experience descriptions/achievements).
+    3.  **Layer 3 (Improvement)**: Integrates AI-suggested refinements for qualitative improvements.
+- **Deterministic Prioritization**: Gaps are now automatically sorted by severity (`critical`, `important`, `recommended`, `optional`).
 
 
 
