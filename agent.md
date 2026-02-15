@@ -19,4 +19,6 @@
 - Implemented `toV1GapAnalysis` bridge to map V2 Audit/Guidance to V1 `CVGapAnalysis`, fixing the "No analysis data" issue in the Dashboard.
 - Hardened V2 Pipeline resilience by relaxing Zod schemas (making many AI-generated fields optional/defaulted) and ensuring robust ID/date normalization.
 - Added comprehensive server-side logging and error boundaries to prevent UI bounces on partial failures.
-- **SUCCESSFUL MODEL UPDATE**: Integrated support for the latest **Gemini 2.5 Flash** and **Gemini 3 Flash** models as requested.
+- **SUCCESSFUL MODEL UPDATE**: Integrated support for the latest **Gemini 2.5 Flash** and **Gemini 3 Flash** models.
+- **API KEY RESOLUTION**: Applied user's experimental API key which supports Gemini 2.5/3; reverted default model to `gemini-2.5-flash` to match key permissions (avoiding 404s on older models).
+- **DIAGNOSTIC HARDENING**: Implemented detailed error views in `CVCompletionFlow` to persist failures and show metadata (stack traces, API errors) for better debugging.
