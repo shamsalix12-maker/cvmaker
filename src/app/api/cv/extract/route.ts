@@ -203,6 +203,20 @@ export async function POST(request: NextRequest) {
         const duration = Date.now() - startTime;
         console.log(`[API Extract] V2.0 Pipeline finished in ${duration}ms. Success: ${result.success}`);
 
+        if (result.success) {
+          console.log('[API Extract] V2 Results Summary:', {
+            hasCV: !!result.cv,
+            hasAudit: !!result.audit,
+            auditScore: result.audit?.overall_score,
+            hasGaps: !!result.gaps,
+            gapCount: result.gaps?.items?.length
+          });
+
+          if (!result.audit) {
+            console.warn('[API Extract] Audit is MISSING. This will cause 0% score.');
+          }
+        }
+
         if (!result.success) {
           return NextResponse.json(result, { status: 400 });
         }
@@ -220,7 +234,9 @@ export async function POST(request: NextRequest) {
           debug: isHollow ? {
             extraction: result.extractionRaw,
             audit: result.auditRaw,
-            gaps: result.gapsRaw
+            gaps: result.gapsRaw,
+            error: result.error,
+            step: (result as any).step
           } : undefined
         };
 

@@ -70,6 +70,7 @@ export class Auditor {
             };
 
             const response = await provider.complete(config, options);
+            console.log('[Auditor] raw response length:', response?.length || 0);
             if (!response) {
                 throw new Error('AI provider returned empty response');
             }
