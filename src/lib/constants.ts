@@ -105,7 +105,7 @@ export const SUPPORTED_AI_PROVIDERS: {
 export const DEFAULT_MODELS: Record<AIProviderName, string> = {
     openai: 'gpt-4o',
     anthropic: 'claude-3-5-sonnet-20241022',
-    google: 'gemini-2.0-flash-exp',
+    google: 'gemini-2.5-flash',
     groq: 'llama-3.3-70b-versatile',
 };
 
