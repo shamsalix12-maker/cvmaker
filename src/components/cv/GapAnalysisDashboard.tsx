@@ -27,6 +27,10 @@ interface GapAnalysisDashboardProps {
   onGapClick: (gap: CVGapItem) => void;
   /** ذخیره مستقیم بدون تحلیل نواقص */
   onSkipToSave?: () => void;
+  /** مدل هوش مصنوعی استفاده شده */
+  aiModel?: string;
+  /** پروایدر هوش مصنوعی استفاده شده */
+  aiProvider?: string;
 }
 
 // ─── Severity Config ───
@@ -86,6 +90,8 @@ export function GapAnalysisDashboard({
   onStartResolving,
   onGapClick,
   onSkipToSave,
+  aiModel,
+  aiProvider,
 }: GapAnalysisDashboardProps) {
   const isRTL = locale === 'fa';
 
@@ -141,6 +147,16 @@ export function GapAnalysisDashboard({
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {locale === 'fa' ? 'امتیاز رزومه' : 'CV Score'}
               </h2>
+              {aiModel && (
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    🤖 {aiProvider === 'google' ? 'Gemini' : aiProvider} {aiModel.replace('gemini-', '').replace('-exp', '')}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {locale === 'fa' ? 'تحلیل با هوش مصنوعی نهایی شد' : 'AI Analysis Completed'}
+                  </span>
+                </div>
+              )}
               <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md mt-1">
                 {analysis.analysis_summary || (locale === 'fa'
                   ? 'تحلیل رزومه شما تکمیل شد.'

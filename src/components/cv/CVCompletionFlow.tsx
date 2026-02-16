@@ -421,7 +421,11 @@ export function CVCompletionFlow({
         current_step: result.isHollow ? 'upload' : 'gap_analysis',
         is_hollow: result.isHollow,
         debug_info: result.debug,
+        executed_model: result.aiModel,
+        executed_provider: result.aiProvider,
       }));
+
+      console.log(`[CVFlow] Extraction successful using ${result.aiProvider}/${result.aiModel}`);
 
       if (result.isHollow) {
         setError(isRTL
@@ -1094,6 +1098,8 @@ export function CVCompletionFlow({
             onStartResolving={() => goToStep('gap_resolution')}
             onGapClick={() => goToStep('gap_resolution')}
             onSkipToSave={() => goToStep('review')}
+            aiModel={(state as any).executed_model}
+            aiProvider={(state as any).executed_provider}
           />
         );
 
