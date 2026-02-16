@@ -94,11 +94,12 @@ export class GapGenerator {
                 cv_id: audit.cv_id,
                 items: items
                     .filter((item: any) => {
-                        const field = String(item.field || '').toLowerCase();
-                        return !field.includes('user_id') && !field.includes('cv_id') && !field.includes('metadata');
+                        const field = String(item.field || item.field_path || '').toLowerCase();
+                        return field && !field.includes('user_id') && !field.includes('cv_id') && !field.includes('metadata');
                     })
-                    .map((item: any) => ({
-                        ...item,
+                    .map((item: any, idx: number) => ({
+                        field: item.field || item.field_path || `field_${idx}`,
+                        guidance_text: item.guidance_text || item.guidance || item.text || 'Missing description',
                         example: typeof item.example === 'string' ? item.example : JSON.stringify(item.example || ''),
                         skip_allowed: item.skip_allowed ?? true,
                     })),

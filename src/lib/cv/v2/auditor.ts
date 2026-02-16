@@ -100,12 +100,12 @@ export class Auditor {
                 audit_date: new Date().toISOString(),
                 overall_score: typeof parsedData.overall_score === 'number' ? parsedData.overall_score : 50,
                 items: rawItems.map((item: any) => ({
-                    ...item,
+                    field_path: item.field_path || item.field || 'unknown_field',
                     exists: item.exists ?? true,
                     completeness_score: item.completeness_score ?? 50,
                     quality_score: item.quality_score ?? 50,
-                    issues: item.issues || [],
-                    recommendations: item.recommendations || [],
+                    issues: Array.isArray(item.issues) ? item.issues : [],
+                    recommendations: Array.isArray(item.recommendations) ? item.recommendations : [],
                 })),
             };
 
