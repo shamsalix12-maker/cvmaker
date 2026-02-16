@@ -11,8 +11,8 @@ export default function CVManagerTestPage() {
   return (
     <CVCompletionFlow
       locale="fa"
-      aiProvider="groq"
-      aiModel="llama-3.3-70b-versatile"
+      aiProvider="google"
+      aiModel="gemini-2.0-flash-exp"
       onComplete={handleComplete}
     />
   );
